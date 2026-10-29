@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exp 9: TechSavvy Online Electronics Store</title>
+  <link rel="stylesheet" href="../../shared/css/app.css">
+  <style>
+    .prod-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+    .prod-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: var(--transition);
+    }
+    .prod-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent-primary);
+    }
+    .prod-icon {
+      height: 140px;
+      background: rgba(15, 23, 42, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .prod-body {
+      padding: 1.25rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="nav-container">
+      <a href="../../index.html" class="brand">
+        ⚡ <span>TechSavvy Gadgets</span>
+        <span class="brand-badge">Exp 9</span>
+      </a>
+      <div class="role-switcher">
+        <button class="role-btn active" data-role="user">Customer (Use Cases 1-13)</button>
+        <button class="role-btn" data-role="admin">Admin Operations</button>
+      </div>
+      <a href="../../index.html" class="back-hub-btn">← All Experiments</a>
+    </div>
+  </header>
+
+  <main class="app-container">
+    <!-- CUSTOMER VIEW (USE CASES 1-13) -->
+    <div data-role-view="user">
+      <!-- Search, Filter & Cart Bar -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🔍 Browse Electronics & Gadgets</div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('cartModal')">🛒 Cart (<span id="cartCountBadge">0</span>)</button>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Search Gadgets</label>
+            <input type="text" id="gadgetSearch" class="form-control" placeholder="Search laptops, smartphones, headphones..." oninput="renderProducts()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select id="gadgetCategory" class="form-select" onchange="renderProducts()">
+              <option value="all">All Categories</option>
+              <option value="Smartphones">Smartphones</option>
+              <option value="Laptops">Laptops</option>
+              <option value="Audio">Audio & Wearables</option>
+              <option value="Tablets">Tablets</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Filter Availability</label>
+            <select id="availFilter" class="form-select" onchange="renderProducts()">
+              <option value="all">All Items</option>
+              <option value="instock">In Stock Only</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Products Grid -->
+      <div class="prod-grid" id="productCatalogGrid"></div>
+
+      <!-- Customer Order History (Use Case 10) -->
+      <div class="card mt-2">
+        <div class="card-header">
+          <div class="card-title">📦 Order History & Real-Time Tracking</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Order Ref</th>
+                <th>Purchased Items</th>
+                <th>Total Value</th>
+                <th>Placed Date</th>
+                <th>Delivery Address</th>
+                <th>Order Status</th>
+              </tr>
+            </thead>
+            <tbody id="userOrderHistoryBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN VIEW -->
+    <div data-role-view="admin" style="display: none;">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Catalog Products</span>
+          <span class="stat-value" id="admTotalProds">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Total Completed Orders</span>
+          <span class="stat-value" id="admTotalOrders">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Gross Revenue</span>
+          <span class="stat-value" id="admGrossRev">₹0</span>
+        </div>
+      </div>
+
+      <!-- Admin Product Management (Add, Edit price, Update desc, Remove) -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🛠️ Admin Product Catalog Management</div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('addProdModal')">+ Add New Gadget</button>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Product Name</th>
+                <th>Category</th>
+                <th>Price (₹)</th>
+                <th>Stock</th>
+                <th>Description</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminProductsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Admin Checkout Customer Ledger -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">👥 Checkout Customer Audit & Order Records</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Customer Name</th>
+                <th>Email & Phone</th>
+                <th>Items Ordered</th>
+                <th>Amount</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="adminCustomersTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Product Details Modal (Use Case 11) -->
+  <div id="detailsModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="card-title" id="detTitle">Product Details</h3>
+        <button class="modal-close" onclick="closeModal('detailsModal')">&times;</button>
+      </div>
+      <div class="modal-body" id="detBody"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('detailsModal')">Close</button>
+        <button type="button" class="btn btn-primary" id="detAddBtn">Add to Cart</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shopping Cart & Checkout Modal (Use Cases 5, 6, 7, 8) -->
+  <div id="cartModal" class="modal-overlay">
+    <div class="modal" style="max-width: 650px;">
+      <div class="modal-header">
+        <h3 class="card-title">🛒 TechSavvy Shopping Cart</h3>
+        <button class="modal-close" onclick="closeModal('cartModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="cartContentsList"></div>
+        <div style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: var(--radius-md); margin-top: 1rem;" id="cartTotalSummary"></div>
+
+        <form id="checkoutForm" onsubmit="handleCheckout(event)" style="margin-top: 1.5rem;">
+          <h4 style="margin-bottom: 0.75rem; color: var(--accent-primary);">Checkout & Shipping Information</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Full Name</label>
+              <input type="text" id="chkCustName" class="form-control" value="Karthik Raj" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email Address</label>
+              <input type="email" id="chkCustEmail" class="form-control" value="karthik@example.com" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phone</label>
+              <input type="tel" id="chkCustPhone" class="form-control" value="9840984012" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Payment Method</label>
+              <select id="chkPayMethod" class="form-select">
+                <option value="UPI / GPay">UPI / GPay (Instant)</option>
+                <option value="Credit/Debit Card">Credit / Debit Card</option>
+                <option value="Cash on Delivery">Cash on Delivery</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Delivery Shipping Address</label>
+            <input type="text" id="chkCustAddress" class="form-control" value="Flat 3A, Horizon Residency, OMR, Chennai - 600096" required>
+          </div>
+          <div class="modal-footer" style="padding: 1rem 0 0 0; border-top: none;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('cartModal')">Continue Shopping</button>
+            <button type="submit" class="btn btn-success" id="checkoutBtn">Complete Purchase</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Product Modal -->
+  <div id="addProdModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="card-title">Add New Product</h3>
+        <button class="modal-close" onclick="closeModal('addProdModal')">&times;</button>
+      </div>
+      <form onsubmit="handleCreateProduct(event)">
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Product Name</label>
+              <input type="text" id="newPName" class="form-control" placeholder="Apple MacBook Air M3" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Category</label>
+              <select id="newPCat" class="form-select">
+                <option value="Laptops">Laptops</option>
+                <option value="Smartphones">Smartphones</option>
+                <option value="Audio">Audio</option>
+                <option value="Tablets">Tablets</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Price (₹)</label>
+              <input type="number" id="newPPrice" class="form-control" value="114900" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Stock Quantity</label>
+              <input type="number" id="newPStock" class="form-control" value="8" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Emoji Icon</label>
+              <input type="text" id="newPEmoji" class="form-control" value="💻">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Specifications / Description</label>
+            <textarea id="newPDesc" class="form-control" rows="2" placeholder="8-Core CPU, 16GB Unified Memory, 512GB SSD..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('addProdModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Product</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../../shared/js/utils.js"></script>
+  <script>
+    const DEFAULT_PRODUCTS = [
+      { id: 'TECH1', name: 'iPhone 15 Pro 256GB', cat: 'Smartphones', price: 129900, stock: 9, emoji: '📱', desc: 'Titanium design, A17 Pro chip, 48MP main camera with 3x telephoto zoom.' },
+      { id: 'TECH2', name: 'Dell XPS 15 OLED Laptop', cat: 'Laptops', price: 174000, stock: 4, emoji: '💻', desc: 'Intel Core i9 13th Gen, 32GB RAM, 1TB NVMe SSD, NVIDIA RTX 4070 Graphics.' },
+      { id: 'TECH3', name: 'Sony WH-1000XM5 ANC Headphones', cat: 'Audio', price: 29990, stock: 15, emoji: '🎧', desc: 'Industry-leading Active Noise Cancellation with 30-hour battery life and LDAC audio.' },
+      { id: 'TECH4', name: 'iPad Pro 11" M2 Liquid Retina', cat: 'Tablets', price: 81900, stock: 6, emoji: '📟', desc: 'Apple M2 Silicon, 120Hz ProMotion display, Apple Pencil 2 support.' }
+    ];
+
+    const DEFAULT_ORDERS = [
+      {
+        id: 'ORD-9901',
+        name: 'Karthik Raj',
+        email: 'karthik@example.com',
+        phone: '9840984012',
+        address: 'Flat 3A, Horizon Residency, OMR, Chennai - 600096',
+        items: [{ id: 'TECH3', name: 'Sony WH-1000XM5 ANC Headphones', price: 29990, qty: 1 }],
+        total: 29990,
+        date: '2026-03-21',
+        status: 'Shipped (In Transit)'
+      }
+    ];
+
+    let products = getStore('ip_lab_exp9_prods', DEFAULT_PRODUCTS);
+    let orders = getStore('ip_lab_exp9_orders', DEFAULT_ORDERS);
+    let cart = [];
+
+    function saveData() {
+      setStore('ip_lab_exp9_prods', products);
+      setStore('ip_lab_exp9_orders', orders);
+      renderAll();
+    }
+
+    function renderAll() {
+      renderProducts();
+      renderCartUI();
+      renderUserOrders();
+      renderAdminProducts();
+      renderAdminCustomers();
+    }
+
+    function renderProducts() {
+      const q = (document.getElementById('gadgetSearch').value || '').toLowerCase();
+      const cat = document.getElementById('gadgetCategory').value;
+      const avail = document.getElementById('availFilter').value;
+
+      const filtered = products.filter(p => {
+        const mQ = p.name.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q);
+        const mCat = cat === 'all' || p.cat === cat;
+        const mAvail = avail === 'all' || (avail === 'instock' && p.stock > 0);
+        return mQ && mCat && mAvail;
+      });
+
+      const grid = document.getElementById('productCatalogGrid');
+      grid.innerHTML = filtered.map(p => `
+        <div class="prod-card">
+          <div class="prod-icon">${p.emoji}</div>
+          <div class="prod-body">
+            <div class="flex justify-between items-center mb-1">
+              <strong style="font-size: 1.1rem; color: #fff;">${p.name}</strong>
+              <span class="badge badge-info">${p.cat}</span>
+            </div>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; flex: 1;">${p.desc}</p>
+            <div class="flex justify-between items-center mt-2">
+              <span style="font-size: 1.3rem; font-weight: 700; color: var(--accent-primary);">₹${p.price.toLocaleString('en-IN')}</span>
+              <span class="badge ${p.stock > 0 ? 'badge-success' : 'badge-danger'}">${p.stock > 0 ? `${p.stock} Available` : 'Out of Stock'}</span>
+            </div>
+            <div class="flex gap-1 mt-2">
+              <button class="btn btn-secondary btn-sm" style="flex: 1;" onclick="viewItemDetails('${p.id}')">View Details</button>
+              <button class="btn btn-primary btn-sm" style="flex: 1;" ${p.stock <= 0 ? 'disabled' : ''} onclick="addToCart('${p.id}')">+ Cart</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function viewItemDetails(id) {
+      const p = products.find(x => x.id === id);
+      if (!p) return;
+      document.getElementById('detTitle').innerText = `${p.emoji} ${p.name}`;
+      document.getElementById('detBody').innerHTML = `
+        <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent-primary); margin-bottom: 0.5rem;">₹${p.price.toLocaleString('en-IN')}</div>
+        <p><strong>Category:</strong> <span class="badge badge-info">${p.cat}</span></p>
+        <p style="margin: 0.75rem 0;"><strong>Full Technical Specifications:</strong><br>${p.desc}</p>
+        <p><strong>Warehouse Availability:</strong> <span class="badge ${p.stock > 0 ? 'badge-success' : 'badge-danger'}">${p.stock > 0 ? `${p.stock} Units in Hub` : 'Backorder'}</span></p>
+      `;
+      document.getElementById('detAddBtn').onclick = () => {
+        addToCart(p.id);
+        closeModal('detailsModal');
+      };
+      openModal('detailsModal');
+    }
+
+    function addToCart(id) {
+      const p = products.find(x => x.id === id);
+      if (!p || p.stock <= 0) return;
+      const existing = cart.find(c => c.id === id);
+      if (existing) {
+        if (existing.qty < p.stock) existing.qty++;
+      } else {
+        cart.push({ id: p.id, name: p.name, price: p.price, qty: 1 });
+      }
+      renderCartUI();
+      showToast(`Added ${p.name} to cart!`, 'success');
+    }
+
+    function renderCartUI() {
+      document.getElementById('cartCountBadge').innerText = cart.reduce((a, b) => a + b.qty, 0);
+      const list = document.getElementById('cartContentsList');
+      if (cart.length === 0) {
+        list.innerHTML = `<div class="empty-state"><p>Shopping cart is currently empty.</p></div>`;
+        document.getElementById('cartTotalSummary').innerHTML = 'Total: ₹0';
+        document.getElementById('checkoutBtn').disabled = true;
+        return;
+      }
+
+      document.getElementById('checkoutBtn').disabled = false;
+      const total = cart.reduce((acc, c) => acc + (c.price * c.qty), 0);
+      list.innerHTML = cart.map(c => `
+        <div class="flex justify-between items-center mb-1" style="background: rgba(255,255,255,0.03); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm);">
+          <div>
+            <strong>${c.name}</strong><br>
+            <small style="color: var(--text-secondary);">₹${c.price.toLocaleString('en-IN')} × ${c.qty}</small>
+          </div>
+          <div class="flex items-center gap-1">
+            <button class="btn btn-secondary btn-sm" onclick="changeQty('${c.id}', -1)">-</button>
+            <span>${c.qty}</span>
+            <button class="btn btn-secondary btn-sm" onclick="changeQty('${c.id}', 1)">+</button>
+            <button class="btn btn-danger btn-sm" onclick="removeFromCart('${c.id}')">&times;</button>
+          </div>
+        </div>
+      `).join('');
+
+      document.getElementById('cartTotalSummary').innerHTML = `
+        <div class="flex justify-between items-center" style="font-size: 1.2rem; font-weight: 700;">
+          <span>Grand Total:</span>
+          <span style="color: var(--success);">₹${total.toLocaleString('en-IN')}</span>
+        </div>
+      `;
+    }
+
+    function changeQty(id, delta) {
+      const item = cart.find(c => c.id === id);
+      if (!item) return;
+      item.qty += delta;
+      if (item.qty <= 0) cart = cart.filter(c => c.id !== id);
+      renderCartUI();
+    }
+
+    function removeFromCart(id) {
+      cart = cart.filter(c => c.id !== id);
+      renderCartUI();
+    }
+
+    function handleCheckout(e) {
+      e.preventDefault();
+      if (cart.length === 0) return;
+
+      const orderId = 'ORD-' + Math.floor(1000 + Math.random() * 9000);
+      const total = cart.reduce((acc, c) => acc + (c.price * c.qty), 0);
+      const name = document.getElementById('chkCustName').value.trim();
+      const email = document.getElementById('chkCustEmail').value.trim();
+      const phone = document.getElementById('chkCustPhone').value.trim();
+      const address = document.getElementById('chkCustAddress').value.trim();
+
+      cart.forEach(c => {
+        const p = products.find(x => x.id === c.id);
+        if (p) p.stock = Math.max(0, p.stock - c.qty);
+      });
+
+      orders.unshift({
+        id: orderId,
+        name, email, phone, address,
+        items: [...cart],
+        total,
+        date: new Date().toISOString().split('T')[0],
+        status: 'Order Placed (Processing)'
+      });
+
+      cart = [];
+      saveData();
+      closeModal('cartModal');
+      showToast(`Purchase Successful! Order #${orderId} generated. Invoice emailed to ${email}`, 'success');
+    }
+
+    function renderUserOrders() {
+      const tbody = document.getElementById('userOrderHistoryBody');
+      tbody.innerHTML = orders.map(o => `
+        <tr>
+          <td><code>${o.id}</code></td>
+          <td>${o.items.map(i => `${i.name} (x${i.qty})`).join(', ')}</td>
+          <td><strong>₹${o.total.toLocaleString('en-IN')}</strong></td>
+          <td>${formatDate(o.date)}</td>
+          <td><small>${o.address}</small></td>
+          <td><span class="badge ${o.status.includes('Delivered') ? 'badge-success' : 'badge-warning'}">${o.status}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function renderAdminProducts() {
+      const tbody = document.getElementById('adminProductsTableBody');
+      tbody.innerHTML = products.map(p => `
+        <tr>
+          <td><code>${p.id}</code></td>
+          <td><strong>${p.name}</strong></td>
+          <td><span class="badge badge-info">${p.cat}</span></td>
+          <td>
+            <input type="number" value="${p.price}" class="form-control" style="width: 110px;" onchange="updateProdField('${p.id}', 'price', this.value)">
+          </td>
+          <td>
+            <input type="number" value="${p.stock}" class="form-control" style="width: 70px;" onchange="updateProdField('${p.id}', 'stock', this.value)">
+          </td>
+          <td>
+            <input type="text" value="${p.desc}" class="form-control" style="min-width: 200px;" onchange="updateProdField('${p.id}', 'desc', this.value)">
+          </td>
+          <td>
+            <button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">Remove</button>
+          </td>
+        </tr>
+      `).join('');
+
+      document.getElementById('admTotalProds').innerText = products.length;
+      document.getElementById('admTotalOrders').innerText = orders.length;
+      const gross = orders.reduce((acc, o) => acc + o.total, 0);
+      document.getElementById('admGrossRev').innerText = `₹${gross.toLocaleString('en-IN')}`;
+    }
+
+    function updateProdField(id, field, val) {
+      const p = products.find(x => x.id === id);
+      if (p) {
+        p[field] = (field === 'price' || field === 'stock') ? parseInt(val) || 0 : val;
+        saveData();
+        showToast(`Updated ${field} for ${p.name}`, 'info');
+      }
+    }
+
+    function deleteProduct(id) {
+      products = products.filter(x => x.id !== id);
+      saveData();
+      showToast('Product removed from TechSavvy catalog', 'warning');
+    }
+
+    function renderAdminCustomers() {
+      const tbody = document.getElementById('adminCustomersTableBody');
+      tbody.innerHTML = orders.map(o => `
+        <tr>
+          <td><code>${o.id}</code></td>
+          <td><strong>${o.name}</strong></td>
+          <td>${o.email}<br><small>${o.phone}</small></td>
+          <td>${o.items.map(i => `${i.name} (x${i.qty})`).join(', ')}</td>
+          <td>₹${o.total.toLocaleString('en-IN')}</td>
+          <td><span class="badge badge-success">${o.status}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function handleCreateProduct(e) {
+      e.preventDefault();
+      const name = document.getElementById('newPName').value.trim();
+      const cat = document.getElementById('newPCat').value;
+      const price = parseInt(document.getElementById('newPPrice').value) || 1000;
+      const stock = parseInt(document.getElementById('newPStock').value) || 5;
+      const emoji = document.getElementById('newPEmoji').value.trim() || '📦';
+      const desc = document.getElementById('newPDesc').value.trim();
+
+      products.push({
+        id: 'TECH' + (products.length + 1),
+        name, cat, price, stock, emoji, desc
+      });
+      saveData();
+      closeModal('addProdModal');
+      e.target.reset();
+      showToast(`Added ${name} to store!`, 'success');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initRoleSwitcher();
+      renderAll();
+    });
+  </script>
+</body>
+</html>

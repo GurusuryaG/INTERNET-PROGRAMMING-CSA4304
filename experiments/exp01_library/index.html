@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exp 1: Local Library Management System</title>
+  <link rel="stylesheet" href="../../shared/css/app.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="nav-container">
+      <a href="../../index.html" class="brand">
+        📚 <span>LibraryHub</span>
+        <span class="brand-badge">Exp 1</span>
+      </a>
+      <div class="role-switcher">
+        <button class="role-btn active" data-role="user">Student / User</button>
+        <button class="role-btn" data-role="admin">Librarian Admin</button>
+      </div>
+      <a href="../../index.html" class="back-hub-btn">← All Experiments</a>
+    </div>
+  </header>
+
+  <main class="app-container">
+    <!-- USER VIEW -->
+    <div data-role-view="user">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📖 Browse Library Books</div>
+          <div class="flex gap-1">
+            <input type="text" id="userBookSearch" class="form-control" style="width: 250px;" placeholder="Search by title, author, genre..." oninput="renderUserBooks()">
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Department / Category</th>
+                <th>Available Copies</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="userBookTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Currently Borrowed</span>
+          <span class="stat-value" id="userBorrowedCount">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Total Outstanding Fine</span>
+          <span class="stat-value" id="userFineTotal">₹0.00</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📜 My Borrow History & Dues</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Borrow ID</th>
+                <th>Book Title</th>
+                <th>Issue Date</th>
+                <th>Expiry Date</th>
+                <th>Status</th>
+                <th>Fine</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="userBorrowHistoryBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📥 Semester-wise Study Material Download</div>
+          <div class="flex gap-1">
+            <select id="materialSemFilter" class="form-select" onchange="renderMaterials()">
+              <option value="all">All Semesters</option>
+              <option value="Sem 1">Semester 1</option>
+              <option value="Sem 2">Semester 2</option>
+              <option value="Sem 3">Semester 3</option>
+              <option value="Sem 4">Semester 4</option>
+              <option value="Sem 5">Semester 5</option>
+              <option value="Sem 6">Semester 6</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Subject Name</th>
+                <th>Semester</th>
+                <th>Year</th>
+                <th>File Format</th>
+                <th>Download</th>
+              </tr>
+            </thead>
+            <tbody id="materialsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN VIEW -->
+    <div data-role-view="admin" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">⚙️ Manage Books Inventory</div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('addBookModal')">+ Add New Book</button>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Book ID</th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Copies Available</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminBooksTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📤 Issue Book for Student</div>
+        </div>
+        <form id="issueBookForm" onsubmit="handleIssueBook(event)" class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Student Roll No / ID</label>
+            <input type="text" id="issueRoll" class="form-control" placeholder="e.g. 21CS045" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Student Name</label>
+            <input type="text" id="issueName" class="form-control" placeholder="e.g. Rahul Sharma" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Select Book</label>
+            <select id="issueBookSelect" class="form-select" required></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Issue Date</label>
+            <input type="date" id="issueDate" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Due Date</label>
+            <input type="date" id="issueDueDate" class="form-control" required>
+          </div>
+          <div class="form-group" style="align-self: flex-end;">
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Issue Book</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📊 Issued Books & Return Status Tracking</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Student</th>
+                <th>Book Title</th>
+                <th>Issue Date</th>
+                <th>Due Date</th>
+                <th>Fine (₹10/day)</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminIssuedTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📁 Upload Semester Study Materials</div>
+        </div>
+        <form id="uploadMaterialForm" onsubmit="handleUploadMaterial(event)" class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Subject Name</label>
+            <input type="text" id="matSubject" class="form-control" placeholder="e.g. Internet Programming" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Semester</label>
+            <select id="matSem" class="form-select" required>
+              <option value="Sem 1">Semester 1</option>
+              <option value="Sem 2">Semester 2</option>
+              <option value="Sem 3">Semester 3</option>
+              <option value="Sem 4">Semester 4</option>
+              <option value="Sem 5">Semester 5</option>
+              <option value="Sem 6">Semester 6</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Academic Year</label>
+            <input type="text" id="matYear" class="form-control" value="2025-2026" required>
+          </div>
+          <div class="form-group" style="align-self: flex-end;">
+            <button type="submit" class="btn btn-success" style="width: 100%;">Upload Material</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <!-- Add Book Modal -->
+  <div id="addBookModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="card-title">Add New Book</h3>
+        <button class="modal-close" onclick="closeModal('addBookModal')">&times;</button>
+      </div>
+      <form id="addBookForm" onsubmit="handleAddBook(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Book Title</label>
+            <input type="text" id="newBookTitle" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Author</label>
+            <input type="text" id="newBookAuthor" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category / Department</label>
+            <input type="text" id="newBookCategory" class="form-control" placeholder="e.g. Computer Science" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Available Copies</label>
+            <input type="number" id="newBookCopies" class="form-control" min="1" value="5" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('addBookModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Book</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../../shared/js/utils.js"></script>
+  <script>
+    // State initialization
+    const DEFAULT_BOOKS = [
+      { id: 'BK101', title: 'Internet & World Wide Web How to Program', author: 'Deitel & Deitel', category: 'Web Tech', copies: 6 },
+      { id: 'BK102', title: 'Database System Concepts', author: 'Silberschatz, Korth', category: 'Database', copies: 4 },
+      { id: 'BK103', title: 'Computer Networks', author: 'Andrew S. Tanenbaum', category: 'Networking', copies: 2 },
+      { id: 'BK104', title: 'Operating System Principles', author: 'Galvin', category: 'Systems', copies: 5 }
+    ];
+
+    const DEFAULT_ISSUED = [
+      { id: 'ISS1', roll: '21CS045', name: 'Rahul Sharma', bookId: 'BK101', bookTitle: 'Internet & World Wide Web How to Program', issueDate: '2026-03-01', dueDate: '2026-03-15', status: 'Issued', fine: 40 },
+      { id: 'ISS2', roll: '21CS045', name: 'Rahul Sharma', bookId: 'BK103', bookTitle: 'Computer Networks', issueDate: '2026-03-10', dueDate: '2026-03-24', status: 'Returned', fine: 0 }
+    ];
+
+    const DEFAULT_MATERIALS = [
+      { id: 'MAT1', subject: 'Internet Programming Lab Manual', sem: 'Sem 5', year: '2025-2026', format: 'PDF (2.4 MB)' },
+      { id: 'MAT2', subject: 'Database Management Systems Notes', sem: 'Sem 4', year: '2025-2026', format: 'PDF (4.1 MB)' },
+      { id: 'MAT3', subject: 'Data Structures Question Bank', sem: 'Sem 3', year: '2024-2025', format: 'PDF (1.8 MB)' }
+    ];
+
+    let books = getStore('ip_lab_exp1_books', DEFAULT_BOOKS);
+    let issued = getStore('ip_lab_exp1_issued', DEFAULT_ISSUED);
+    let materials = getStore('ip_lab_exp1_materials', DEFAULT_MATERIALS);
+
+    function saveData() {
+      setStore('ip_lab_exp1_books', books);
+      setStore('ip_lab_exp1_issued', issued);
+      setStore('ip_lab_exp1_materials', materials);
+      renderAll();
+    }
+
+    function calculateFine(dueDateStr, status) {
+      if (status === 'Returned') return 0;
+      const today = new Date('2026-03-19');
+      const due = new Date(dueDateStr);
+      if (today > due) {
+        const diffDays = Math.ceil((today - due) / (1000 * 60 * 60 * 24));
+        return diffDays * 10;
+      }
+      return 0;
+    }
+
+    function renderAll() {
+      renderUserBooks();
+      renderUserHistory();
+      renderMaterials();
+      renderAdminBooks();
+      renderAdminIssued();
+      populateBookSelect();
+    }
+
+    function renderUserBooks() {
+      const q = (document.getElementById('userBookSearch').value || '').toLowerCase();
+      const tbody = document.getElementById('userBookTableBody');
+      const filtered = books.filter(b => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q) || b.category.toLowerCase().includes(q));
+      
+      tbody.innerHTML = filtered.map(b => `
+        <tr>
+          <td><code>${b.id}</code></td>
+          <td><strong>${b.title}</strong></td>
+          <td>${b.author}</td>
+          <td><span class="badge badge-info">${b.category}</span></td>
+          <td><span class="badge ${b.copies > 0 ? 'badge-success' : 'badge-danger'}">${b.copies} In Stock</span></td>
+          <td>
+            <button class="btn btn-primary btn-sm" ${b.copies <= 0 ? 'disabled' : ''} onclick="quickBorrow('${b.id}')">Request Borrow</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function quickBorrow(bookId) {
+      const book = books.find(b => b.id === bookId);
+      if (!book || book.copies <= 0) {
+        showToast('Book is currently unavailable!', 'danger');
+        return;
+      }
+      book.copies--;
+      const newIssue = {
+        id: 'ISS' + (issued.length + 1),
+        roll: '21CS045',
+        name: 'Rahul Sharma',
+        bookId: book.id,
+        bookTitle: book.title,
+        issueDate: '2026-03-19',
+        dueDate: '2026-04-02',
+        status: 'Issued',
+        fine: 0
+      };
+      issued.unshift(newIssue);
+      saveData();
+      showToast(`Successfully borrowed "${book.title}"! Due date: 2026-04-02`, 'success');
+    }
+
+    function renderUserHistory() {
+      const tbody = document.getElementById('userBorrowHistoryBody');
+      let totalFine = 0;
+      let activeBorrow = 0;
+
+      tbody.innerHTML = issued.map(item => {
+        const liveFine = calculateFine(item.dueDate, item.status);
+        if (item.status === 'Issued') {
+          activeBorrow++;
+          totalFine += liveFine;
+        }
+
+        return `
+          <tr>
+            <td><code>${item.id}</code></td>
+            <td>${item.bookTitle}</td>
+            <td>${formatDate(item.issueDate)}</td>
+            <td>${formatDate(item.dueDate)}</td>
+            <td><span class="badge ${item.status === 'Issued' ? 'badge-warning' : 'badge-success'}">${item.status}</span></td>
+            <td><strong style="color: ${liveFine > 0 ? 'var(--danger)' : 'var(--success)'}">₹${liveFine}</strong></td>
+            <td>
+              ${item.status === 'Issued' ? `<button class="btn btn-secondary btn-sm" onclick="returnBook('${item.id}')">Return Book</button>` : `<span class="badge badge-success">Completed</span>`}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('userBorrowedCount').innerText = activeBorrow;
+      document.getElementById('userFineTotal').innerText = `₹${totalFine}.00`;
+    }
+
+    function returnBook(issueId) {
+      const record = issued.find(i => i.id === issueId);
+      if (record) {
+        record.status = 'Returned';
+        const book = books.find(b => b.id === record.bookId);
+        if (book) book.copies++;
+        saveData();
+        showToast('Book returned successfully!', 'success');
+      }
+    }
+
+    function renderMaterials() {
+      const sem = document.getElementById('materialSemFilter').value;
+      const tbody = document.getElementById('materialsTableBody');
+      const filtered = sem === 'all' ? materials : materials.filter(m => m.sem === sem);
+      
+      tbody.innerHTML = filtered.map(m => `
+        <tr>
+          <td><strong>${m.subject}</strong></td>
+          <td><span class="badge badge-primary">${m.sem}</span></td>
+          <td>${m.year}</td>
+          <td><span class="badge badge-info">${m.format}</span></td>
+          <td><button class="btn btn-secondary btn-sm" onclick="simulateDownload('${m.subject}')">⬇️ Download PDF</button></td>
+        </tr>
+      `).join('');
+    }
+
+    function simulateDownload(name) {
+      showToast(`Downloading: ${name}...`, 'info');
+      setTimeout(() => showToast(`Download completed for ${name}!`, 'success'), 1200);
+    }
+
+    function renderAdminBooks() {
+      const tbody = document.getElementById('adminBooksTableBody');
+      tbody.innerHTML = books.map(b => `
+        <tr>
+          <td><code>${b.id}</code></td>
+          <td><strong>${b.title}</strong></td>
+          <td>${b.author}</td>
+          <td><input type="number" min="0" value="${b.copies}" style="width: 70px;" class="form-control" onchange="updateCopies('${b.id}', this.value)"></td>
+          <td>
+            <button class="btn btn-danger btn-sm" onclick="deleteBook('${b.id}')">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function updateCopies(bookId, val) {
+      const book = books.find(b => b.id === bookId);
+      if (book) {
+        book.copies = parseInt(val) || 0;
+        saveData();
+        showToast(`Stock updated for ${book.title}`, 'info');
+      }
+    }
+
+    function deleteBook(bookId) {
+      books = books.filter(b => b.id !== bookId);
+      saveData();
+      showToast('Book removed from catalogue', 'warning');
+    }
+
+    function renderAdminIssued() {
+      const tbody = document.getElementById('adminIssuedTableBody');
+      tbody.innerHTML = issued.map(item => {
+        const liveFine = calculateFine(item.dueDate, item.status);
+        return `
+          <tr>
+            <td><code>${item.id}</code></td>
+            <td><strong>${item.name}</strong> (${item.roll})</td>
+            <td>${item.bookTitle}</td>
+            <td>${formatDate(item.issueDate)}</td>
+            <td>${formatDate(item.dueDate)}</td>
+            <td><strong style="color: ${liveFine > 0 ? 'var(--danger)' : 'var(--success)'}">₹${liveFine}</strong></td>
+            <td><span class="badge ${item.status === 'Issued' ? 'badge-warning' : 'badge-success'}">${item.status}</span></td>
+            <td>
+              ${item.status === 'Issued' ? `<button class="btn btn-success btn-sm" onclick="returnBook('${item.id}')">Mark Returned</button>` : `<button class="btn btn-secondary btn-sm" disabled>Cleared</button>`}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function populateBookSelect() {
+      const select = document.getElementById('issueBookSelect');
+      select.innerHTML = '<option value="">-- Choose Book --</option>' + books.map(b => `
+        <option value="${b.id}" ${b.copies <= 0 ? 'disabled' : ''}>${b.title} (${b.copies} available)</option>
+      `).join('');
+    }
+
+    function handleAddBook(e) {
+      e.preventDefault();
+      const title = document.getElementById('newBookTitle').value.trim();
+      const author = document.getElementById('newBookAuthor').value.trim();
+      const category = document.getElementById('newBookCategory').value.trim();
+      const copies = parseInt(document.getElementById('newBookCopies').value) || 1;
+
+      books.push({
+        id: 'BK' + (books.length + 101),
+        title, author, category, copies
+      });
+      saveData();
+      closeModal('addBookModal');
+      e.target.reset();
+      showToast(`Book "${title}" added successfully!`, 'success');
+    }
+
+    function handleIssueBook(e) {
+      e.preventDefault();
+      const roll = document.getElementById('issueRoll').value.trim();
+      const name = document.getElementById('issueName').value.trim();
+      const bookId = document.getElementById('issueBookSelect').value;
+      const issueDate = document.getElementById('issueDate').value;
+      const dueDate = document.getElementById('issueDueDate').value;
+
+      const book = books.find(b => b.id === bookId);
+      if (!book || book.copies <= 0) {
+        showToast('Selected book is not available in stock!', 'danger');
+        return;
+      }
+
+      book.copies--;
+      issued.unshift({
+        id: 'ISS' + (issued.length + 1),
+        roll, name, bookId,
+        bookTitle: book.title,
+        issueDate, dueDate,
+        status: 'Issued',
+        fine: 0
+      });
+      saveData();
+      e.target.reset();
+      showToast(`Issued "${book.title}" to ${name}!`, 'success');
+    }
+
+    function handleUploadMaterial(e) {
+      e.preventDefault();
+      const subject = document.getElementById('matSubject').value.trim();
+      const sem = document.getElementById('matSem').value;
+      const year = document.getElementById('matYear').value.trim();
+
+      materials.unshift({
+        id: 'MAT' + (materials.length + 1),
+        subject, sem, year, format: 'PDF (3.2 MB)'
+      });
+      saveData();
+      e.target.reset();
+      showToast('Semester study material uploaded successfully!', 'success');
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      initRoleSwitcher();
+      // Set default dates in admin form
+      const today = new Date('2026-03-19');
+      const due = new Date('2026-04-02');
+      if (document.getElementById('issueDate')) document.getElementById('issueDate').value = today.toISOString().split('T')[0];
+      if (document.getElementById('issueDueDate')) document.getElementById('issueDueDate').value = due.toISOString().split('T')[0];
+      renderAll();
+    });
+  </script>
+</body>
+</html>

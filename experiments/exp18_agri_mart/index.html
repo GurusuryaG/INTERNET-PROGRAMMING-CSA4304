@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exp 18: AgriMart Agricultural Supplies Portal</title>
+  <link rel="stylesheet" href="../../shared/css/app.css">
+  <style>
+    .agri-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+    .agri-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: var(--transition);
+    }
+    .agri-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--success);
+    }
+    .agri-img {
+      height: 160px;
+      background: linear-gradient(135deg, #14532d, #052e16);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .agri-body {
+      padding: 1.25rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="nav-container">
+      <a href="../../index.html" class="brand">
+        🌾 <span>AgriMart Direct</span>
+        <span class="brand-badge">Exp 18</span>
+      </a>
+      <div class="role-switcher">
+        <button class="role-btn active" data-role="buyer">Buyer / Public</button>
+        <button class="role-btn" data-role="farmer">Farmer Producer</button>
+      </div>
+      <a href="../../index.html" class="back-hub-btn">← All Experiments</a>
+    </div>
+  </header>
+
+  <main class="app-container">
+    <!-- PUBLIC / BUYER VIEW -->
+    <div data-role-view="buyer">
+      <!-- Wallet & Cart Banner -->
+      <div class="stats-grid">
+        <div class="stat-card" style="border-top: 3px solid var(--success);">
+          <span class="stat-label">AgriPay Wallet Balance</span>
+          <span class="stat-value" id="buyerWalletDisplay">₹2,800.00</span>
+          <div class="flex gap-1 mt-1">
+            <button class="btn btn-secondary btn-sm" onclick="addBuyerFunds()">+ Top-up ₹1000</button>
+          </div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Cart Items</span>
+          <span class="stat-value" id="cartCountBadge">0</span>
+          <div class="mt-1">
+            <button class="btn btn-primary btn-sm" onclick="openModal('agriCartModal')">🛒 View Cart</button>
+          </div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Direct Farm Origin</span>
+          <span class="stat-value">100% Verified</span>
+        </div>
+      </div>
+
+      <!-- Search & Filters -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🔍 Browse Certified Seeds, Bio-Fertilizers & Tools</div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Search Supplies</label>
+            <input type="text" id="agriSearch" class="form-control" placeholder="Paddy seeds, Neem fertilizer, Drip kit..." oninput="renderAgriSupplies()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select id="agriCategory" class="form-select" onchange="renderAgriSupplies()">
+              <option value="all">All Farm Categories</option>
+              <option value="Seeds">High-Yield Seeds</option>
+              <option value="Fertilizers">Organic & Bio-Fertilizers</option>
+              <option value="Pesticides">Eco-Friendly Bio-Pesticides</option>
+              <option value="Equipment">Farm Tools & Sprayers</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Products Grid -->
+      <div class="agri-grid" id="agriCatalogGrid"></div>
+
+      <!-- Buyer Orders & Shipping Status -->
+      <div class="card mt-2">
+        <div class="card-header">
+          <div class="card-title">📦 My Farm Orders & Dispatch Tracking</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Order Ref</th>
+                <th>Product Purchased</th>
+                <th>Farmer Seller</th>
+                <th>Delivery Address</th>
+                <th>Total Paid</th>
+                <th>Shipping Status</th>
+              </tr>
+            </thead>
+            <tbody id="buyerOrdersBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- FARMER VIEW -->
+    <div data-role-view="farmer" style="display: none;">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Farmer Total Sales</span>
+          <span class="stat-value" id="farmerSalesTotal">₹0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Listed Farm Supplies</span>
+          <span class="stat-value" id="farmerProductCount">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Orders Pending Dispatch</span>
+          <span class="stat-value" id="farmerPendingOrders">0</span>
+        </div>
+      </div>
+
+      <!-- Manage Farmer Inventory -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🌾 Manage My Agricultural Produce & Supplies</div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('addAgriModal')">+ List New Product</button>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Category</th>
+                <th>Price (₹)</th>
+                <th>Available Bags/Units</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="farmerProductsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Manage Orders & Update Shipping Status -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🚚 Farm Order Dispatch & Shipping Status Manager</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Buyer</th>
+                <th>Items Ordered</th>
+                <th>Address</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Update Shipping Status</th>
+              </tr>
+            </thead>
+            <tbody id="farmerOrdersBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Cart Modal -->
+  <div id="agriCartModal" class="modal-overlay">
+    <div class="modal" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 class="card-title">🛒 Farm Supplies Shopping Cart</h3>
+        <button class="modal-close" onclick="closeModal('agriCartModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="cartItemsList"></div>
+        <form onsubmit="handlePlaceAgriOrder(event)" style="margin-top: 1.25rem;">
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" id="agriBuyerName" class="form-control" value="Gurusamy (Buyer)" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Delivery Shipping Address</label>
+            <input type="text" id="agriBuyerAddress" class="form-control" value="Plot 18, Green Meadows Farm, Coimbatore Rural - 641032" required>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: var(--radius-md);" id="cartTotalSummary"></div>
+          <div class="modal-footer" style="padding: 1rem 0 0 0; border-top: none;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('agriCartModal')">Cancel</button>
+            <button type="submit" class="btn btn-success" id="payAgriBtn">Pay via Wallet & Confirm</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Product Modal for Farmer -->
+  <div id="addAgriModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="card-title">List Farm Supply / Produce</h3>
+        <button class="modal-close" onclick="closeModal('addAgriModal')">&times;</button>
+      </div>
+      <form onsubmit="handleCreateAgriProduct(event)">
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Product Name</label>
+              <input type="text" id="newAgriName" class="form-control" placeholder="Organic Vermicompost 25Kg" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Category</label>
+              <select id="newAgriCat" class="form-select">
+                <option value="Fertilizers">Fertilizers</option>
+                <option value="Seeds">Seeds</option>
+                <option value="Pesticides">Pesticides</option>
+                <option value="Equipment">Equipment</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Price (₹)</label>
+              <input type="number" id="newAgriPrice" class="form-control" value="450" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Quantity in Stock</label>
+              <input type="number" id="newAgriStock" class="form-control" value="25" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Emoji Icon</label>
+              <input type="text" id="newAgriEmoji" class="form-control" value="🌱">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description & Application</label>
+            <textarea id="newAgriDesc" class="form-control" rows="2" placeholder="Enriched with earthworm humus, boosts crop soil micro-nutrients..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('addAgriModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">List Product</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../../shared/js/utils.js"></script>
+  <script>
+    const DEFAULT_AGRI = [
+      { id: 'AGR1', name: 'BPT 5204 Samba Masuri Paddy Seeds (25 Kg)', cat: 'Seeds', farmer: 'Kisan Velmurugan', price: 1100, stock: 40, emoji: '🌾', desc: 'Certified disease-resistant high yield variety suitable for winter cultivation.' },
+      { id: 'AGR2', name: 'Neem Cake Bio-Organic Fertilizer (50 Kg)', cat: 'Fertilizers', farmer: 'Thirunavukkarasu Organics', price: 850, stock: 35, emoji: '🌱', desc: '100% natural pest repellent and slow-release nitrogen soil enricher.' },
+      { id: 'AGR3', name: '16-Litre 12V Battery Backpack Knapsack Sprayer', cat: 'Equipment', farmer: 'Delta Agro Tools', price: 2150, stock: 12, emoji: '🚜', desc: 'Rechargeable dual-nozzle sprayer with continuous pressure gauge.' }
+    ];
+
+    const DEFAULT_ORDERS = [
+      { id: 'AGR-ORD-601', buyer: 'Gurusamy (Buyer)', address: 'Plot 18, Green Meadows Farm, Coimbatore Rural - 641032', items: [{ id: 'AGR2', name: 'Neem Cake Bio-Organic Fertilizer (50 Kg)', price: 850, qty: 1 }], farmer: 'Thirunavukkarasu Organics', total: 850, status: 'Dispatched (Rural Express)' }
+    ];
+
+    let supplies = getStore('ip_lab_exp18_supplies', DEFAULT_AGRI);
+    let orders = getStore('ip_lab_exp18_orders', DEFAULT_ORDERS);
+    let wallet = getStore('ip_lab_exp18_wallet', 2800);
+    let cart = [];
+
+    function saveData() {
+      setStore('ip_lab_exp18_supplies', supplies);
+      setStore('ip_lab_exp18_orders', orders);
+      setStore('ip_lab_exp18_wallet', wallet);
+      renderAll();
+    }
+
+    function renderAll() {
+      document.getElementById('buyerWalletDisplay').innerText = `₹${wallet.toLocaleString('en-IN')}.00`;
+      renderAgriSupplies();
+      renderCartUI();
+      renderBuyerOrders();
+      renderFarmerProducts();
+      renderFarmerOrders();
+    }
+
+    function addBuyerFunds() {
+      wallet += 1000;
+      saveData();
+      showToast('₹1,000 added to AgriPay wallet!', 'success');
+    }
+
+    function renderAgriSupplies() {
+      const q = (document.getElementById('agriSearch').value || '').toLowerCase();
+      const cat = document.getElementById('agriCategory').value;
+
+      const filtered = supplies.filter(s => {
+        const mQ = s.name.toLowerCase().includes(q) || s.desc.toLowerCase().includes(q);
+        const mCat = cat === 'all' || s.cat === cat;
+        return mQ && mCat;
+      });
+
+      const grid = document.getElementById('agriCatalogGrid');
+      grid.innerHTML = filtered.map(s => `
+        <div class="agri-card">
+          <div class="agri-img">${s.emoji}</div>
+          <div class="agri-body">
+            <div class="flex justify-between items-center mb-1">
+              <strong style="font-size: 1.1rem; color: #fff;">${s.name}</strong>
+              <span class="badge badge-info">${s.cat}</span>
+            </div>
+            <small style="color: var(--accent-secondary); margin-bottom: 0.5rem;">Farmer Producer: <strong>${s.farmer}</strong></small>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; flex: 1;">${s.desc}</p>
+            <div class="flex justify-between items-center mt-2">
+              <span style="font-size: 1.35rem; font-weight: 700; color: var(--success);">₹${s.price.toLocaleString('en-IN')}</span>
+              <span class="badge ${s.stock > 0 ? 'badge-success' : 'badge-danger'}">${s.stock} Bags in Stock</span>
+            </div>
+            <button class="btn btn-primary btn-sm mt-2" ${s.stock <= 0 ? 'disabled' : ''} onclick="addToCart('${s.id}')">
+              Add to Farm Cart
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function addToCart(id) {
+      const s = supplies.find(x => x.id === id);
+      if (!s || s.stock <= 0) return;
+      const existing = cart.find(c => c.id === id);
+      if (existing) existing.qty++;
+      else cart.push({ id: s.id, name: s.name, price: s.price, farmer: s.farmer, qty: 1 });
+      renderCartUI();
+      showToast(`Added ${s.name} to cart!`, 'success');
+    }
+
+    function renderCartUI() {
+      document.getElementById('cartCountBadge').innerText = cart.reduce((a, b) => a + b.qty, 0);
+      const list = document.getElementById('cartItemsList');
+      if (cart.length === 0) {
+        list.innerHTML = `<div class="empty-state"><p>Cart is empty.</p></div>`;
+        document.getElementById('cartTotalSummary').innerHTML = 'Total: ₹0';
+        document.getElementById('payAgriBtn').disabled = true;
+        return;
+      }
+
+      document.getElementById('payAgriBtn').disabled = false;
+      const total = cart.reduce((acc, c) => acc + (c.price * c.qty), 0);
+      list.innerHTML = cart.map(c => `
+        <div class="flex justify-between items-center mb-1" style="background: rgba(255,255,255,0.03); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm);">
+          <div><strong>${c.name}</strong><br><small style="color: var(--text-secondary);">₹${c.price} × ${c.qty}</small></div>
+          <button class="btn btn-danger btn-sm" onclick="removeFromCart('${c.id}')">&times;</button>
+        </div>
+      `).join('');
+
+      document.getElementById('cartTotalSummary').innerHTML = `
+        <div class="flex justify-between" style="font-size: 1.15rem; font-weight: 700;">
+          <span>Total Order Value:</span>
+          <span style="color: var(--success);">₹${total.toLocaleString('en-IN')}</span>
+        </div>
+      `;
+    }
+
+    function removeFromCart(id) {
+      cart = cart.filter(c => c.id !== id);
+      renderCartUI();
+    }
+
+    function handlePlaceAgriOrder(e) {
+      e.preventDefault();
+      if (cart.length === 0) return;
+
+      const total = cart.reduce((acc, c) => acc + (c.price * c.qty), 0);
+      if (wallet < total) {
+        showToast('Insufficient wallet balance! Top-up funds to proceed.', 'danger');
+        return;
+      }
+
+      wallet -= total;
+      const orderId = 'AGR-ORD-' + Math.floor(100 + Math.random() * 900);
+      const buyer = document.getElementById('agriBuyerName').value.trim();
+      const address = document.getElementById('agriBuyerAddress').value.trim();
+
+      cart.forEach(c => {
+        const s = supplies.find(x => x.id === c.id);
+        if (s) s.stock = Math.max(0, s.stock - c.qty);
+      });
+
+      orders.unshift({
+        id: orderId,
+        buyer, address,
+        items: [...cart],
+        farmer: cart[0].farmer,
+        total,
+        status: 'Order Placed (Farm Packaging)'
+      });
+
+      cart = [];
+      saveData();
+      closeModal('agriCartModal');
+      showToast(`Order ${orderId} confirmed! ₹${total} paid from AgriPay wallet.`, 'success');
+    }
+
+    function renderBuyerOrders() {
+      const tbody = document.getElementById('buyerOrdersBody');
+      tbody.innerHTML = orders.map(o => `
+        <tr>
+          <td><code>${o.id}</code></td>
+          <td>${o.items.map(i => `${i.name} (x${i.qty})`).join(', ')}</td>
+          <td>${o.farmer}</td>
+          <td><small>${o.address}</small></td>
+          <td><strong>₹${o.total.toLocaleString('en-IN')}</strong></td>
+          <td><span class="badge ${o.status.includes('Delivered') ? 'badge-success' : 'badge-warning'}">${o.status}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function renderFarmerProducts() {
+      const tbody = document.getElementById('farmerProductsBody');
+      tbody.innerHTML = supplies.map(s => `
+        <tr>
+          <td>${s.emoji} <strong>${s.name}</strong></td>
+          <td><span class="badge badge-info">${s.cat}</span></td>
+          <td><input type="number" value="${s.price}" class="form-control" style="width: 90px;" onchange="updateSupply('${s.id}', 'price', this.value)"></td>
+          <td><input type="number" value="${s.stock}" class="form-control" style="width: 70px;" onchange="updateSupply('${s.id}', 'stock', this.value)"></td>
+          <td><button class="btn btn-danger btn-sm" onclick="deleteSupply('${s.id}')">Delete</button></td>
+        </tr>
+      `).join('');
+
+      document.getElementById('farmerProductCount').innerText = supplies.length;
+      document.getElementById('farmerPendingOrders').innerText = orders.filter(o => !o.status.includes('Delivered')).length;
+      const sales = orders.reduce((acc, o) => acc + o.total, 0);
+      document.getElementById('farmerSalesTotal').innerText = `₹${sales.toLocaleString('en-IN')}`;
+    }
+
+    function updateSupply(id, field, val) {
+      const s = supplies.find(x => x.id === id);
+      if (s) {
+        s[field] = parseInt(val) || 0;
+        saveData();
+      }
+    }
+
+    function deleteSupply(id) {
+      supplies = supplies.filter(x => x.id !== id);
+      saveData();
+      showToast('Produce SKU removed', 'warning');
+    }
+
+    function renderFarmerOrders() {
+      const tbody = document.getElementById('farmerOrdersBody');
+      tbody.innerHTML = orders.map(o => `
+        <tr>
+          <td><code>${o.id}</code></td>
+          <td><strong>${o.buyer}</strong></td>
+          <td>${o.items.map(i => `${i.name} (x${i.qty})`).join(', ')}</td>
+          <td><small>${o.address}</small></td>
+          <td>₹${o.total}</td>
+          <td><span class="badge ${o.status.includes('Delivered') ? 'badge-success' : 'badge-warning'}">${o.status}</span></td>
+          <td>
+            <select class="form-select" style="font-size: 0.8rem; padding: 0.3rem;" onchange="updateFarmerLogistics('${o.id}', this.value)">
+              <option value="${o.status}">${o.status}</option>
+              <option value="Harvested & Bagged">Harvested & Bagged</option>
+              <option value="Loaded on Farm Truck">Loaded on Farm Truck</option>
+              <option value="Delivered to Buyer">Delivered to Buyer</option>
+            </select>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function updateFarmerLogistics(id, status) {
+      const o = orders.find(x => x.id === id);
+      if (o) {
+        o.status = status;
+        saveData();
+        showToast(`Order status updated to: ${status}`, 'info');
+      }
+    }
+
+    function handleCreateAgriProduct(e) {
+      e.preventDefault();
+      const name = document.getElementById('newAgriName').value.trim();
+      const cat = document.getElementById('newAgriCat').value;
+      const price = parseInt(document.getElementById('newAgriPrice').value) || 500;
+      const stock = parseInt(document.getElementById('newAgriStock').value) || 10;
+      const emoji = document.getElementById('newAgriEmoji').value.trim() || '🌾';
+      const desc = document.getElementById('newAgriDesc').value.trim();
+
+      supplies.push({
+        id: 'AGR' + (supplies.length + 1),
+        name, cat, farmer: 'Kisan Velmurugan (Farmer Producer)',
+        price, stock, emoji, desc
+      });
+
+      saveData();
+      closeModal('addAgriModal');
+      e.target.reset();
+      showToast(`Farm product "${name}" added to AgriMart!`, 'success');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initRoleSwitcher();
+      renderAll();
+    });
+  </script>
+</body>
+</html>

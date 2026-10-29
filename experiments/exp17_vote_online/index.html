@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exp 17: VoteOnline Secure E-Voting Platform</title>
+  <link rel="stylesheet" href="../../shared/css/app.css">
+  <style>
+    .candidate-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.25rem;
+    }
+    .candidate-card {
+      background: var(--bg-secondary);
+      border: 2px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+    .candidate-card:hover {
+      border-color: var(--accent-primary);
+    }
+    .candidate-card.selected {
+      border-color: var(--success);
+      background: rgba(16, 185, 129, 0.1);
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+    }
+    .candidate-symbol {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: var(--bg-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.2rem;
+      margin-bottom: 0.75rem;
+      border: 1px solid var(--border-color);
+    }
+    .progress-bar-bg {
+      background: var(--bg-tertiary);
+      border-radius: 999px;
+      height: 12px;
+      overflow: hidden;
+      margin-top: 0.4rem;
+    }
+    .progress-bar-fill {
+      background: var(--accent-gradient);
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.5s ease;
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="nav-container">
+      <a href="../../index.html" class="brand">
+        🗳️ <span>VoteOnline Election Commission</span>
+        <span class="brand-badge">Exp 17</span>
+      </a>
+      <div class="role-switcher">
+        <button class="role-btn active" data-role="voter">Registered Voter</button>
+        <button class="role-btn" data-role="admin">Election Commission Admin</button>
+      </div>
+      <a href="../../index.html" class="back-hub-btn">← All Experiments</a>
+    </div>
+  </header>
+
+  <main class="app-container">
+    <!-- VOTER VIEW -->
+    <div data-role-view="voter">
+      <!-- 2-Step Authentication & Voter Verification -->
+      <div class="card" id="voterAuthBox">
+        <div class="card-header">
+          <div class="card-title">🔐 Step 1: Voter Identity & OTP Verification</div>
+          <span class="badge badge-primary">2-Factor Authentication</span>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Electoral Voter ID (EPIC)</label>
+            <input type="text" id="voterIdInput" class="form-control" value="TN94/082/01928" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Registered Mobile OTP</label>
+            <div class="flex gap-1">
+              <input type="text" id="voterOtpInput" class="form-control" placeholder="Enter 6-digit OTP">
+              <button class="btn btn-secondary" onclick="sendVoterOtp()">Get OTP</button>
+            </div>
+          </div>
+          <div class="form-group" style="align-self: flex-end;">
+            <button class="btn btn-primary" style="width: 100%;" onclick="verifyVoterLogin()">Verify & Unlock Ballot</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Electronic Ballot Box -->
+      <div class="card" id="ballotSection" style="display: none;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">🗳️ Official Digital Ballot (Ward 14 - Chennai Central)</div>
+            <small style="color: var(--text-secondary);">Select exactly one candidate and click "Submit Confidential Vote".</small>
+          </div>
+          <span class="badge badge-success" id="ballotVoterStatus">Ballot Unlocked</span>
+        </div>
+
+        <div class="candidate-grid" id="voterBallotGrid"></div>
+
+        <div class="card-footer mt-2" style="border-top: 1px solid var(--border-color); padding-top: 1rem; text-align: center;">
+          <button class="btn btn-success" id="submitBallotBtn" style="font-size: 1.1rem; padding: 0.75rem 2.5rem;" onclick="handleCastVote()">
+            🔒 Submit Confidential Vote
+          </button>
+        </div>
+      </div>
+
+      <!-- Vote Confirmation Receipt -->
+      <div class="card" id="voteReceiptBox" style="display: none; border-left: 4px solid var(--success);">
+        <div class="flex justify-between items-center mb-1">
+          <h3 style="color: var(--success);">✅ Vote Recorded & Digitally Cryptographed</h3>
+          <span class="badge badge-success">VVPAT Verified</span>
+        </div>
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">Your vote has been cast. Voter ID <code>TN94/082/01928</code> has been marked as VOTED to prevent multiple votes.</p>
+        <p style="font-family: monospace; font-size: 0.85rem; color: var(--accent-primary); margin-top: 0.5rem;" id="voteHashDisplay"></p>
+      </div>
+    </div>
+
+    <!-- ADMIN VIEW -->
+    <div data-role-view="admin" style="display: none;">
+      <!-- Real-Time Election Tally & Results -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📊 Live Election Tally & Ward Results</div>
+          <button class="btn btn-secondary btn-sm" onclick="renderAll()">🔄 Refresh Tally</button>
+        </div>
+        <div id="adminLiveResultsContainer" style="display: flex; flex-direction: column; gap: 1rem;"></div>
+      </div>
+
+      <!-- Manage Election Candidates -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">👨‍💼 Manage Election Candidates & Party Symbols</div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('addCandidateModal')">+ Add Candidate</button>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Symbol</th>
+                <th>Candidate Name</th>
+                <th>Party Affiliation</th>
+                <th>Ward Allotted</th>
+                <th>Manifesto Key Points</th>
+                <th>Votes Secured</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="adminCandidatesTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Manage Voter Electoral Roll -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📜 Electoral Roll & Voter List Management</div>
+          <button class="btn btn-secondary btn-sm" onclick="importSampleVoters()">📥 Import CSV Voter List</button>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Voter ID (EPIC)</th>
+                <th>Elector Name</th>
+                <th>Age / Gender</th>
+                <th>Allotted Ward</th>
+                <th>Voting Status</th>
+              </tr>
+            </thead>
+            <tbody id="adminVoterListBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Add Candidate Modal -->
+  <div id="addCandidateModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="card-title">Register Election Candidate</h3>
+        <button class="modal-close" onclick="closeModal('addCandidateModal')">&times;</button>
+      </div>
+      <form onsubmit="handleCreateCandidate(event)">
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Candidate Name</label>
+              <input type="text" id="newCandName" class="form-control" placeholder="Dr. V. Prabhakaran" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Party Name</label>
+              <input type="text" id="newCandParty" class="form-control" placeholder="Progressive Democratic Alliance" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Party Symbol Emoji</label>
+              <input type="text" id="newCandSymbol" class="form-control" value="🌻">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Election Ward</label>
+              <input type="text" id="newCandWard" class="form-control" value="Ward 14 (Chennai)" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Key Manifesto Highlights</label>
+            <textarea id="newCandManifesto" class="form-control" rows="2" placeholder="Free healthcare centers, smart roads, 100% solar streetlights..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('addCandidateModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Nominate Candidate</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../../shared/js/utils.js"></script>
+  <script>
+    const DEFAULT_CANDIDATES = [
+      { id: 'CAND1', name: 'Thiru R. Venkatesan', party: 'People Welfare Front', symbol: '🌅', ward: 'Ward 14', manifesto: 'Clean water supply, high-speed public wi-fi, modern flyovers.', votes: 142 },
+      { id: 'CAND2', name: 'Dr. Meenakshi Sundaram', party: 'United Citizens Coalition', symbol: '⚖️', ward: 'Ward 14', manifesto: 'Government hospital upgrade, free education tablets for youth.', votes: 128 },
+      { id: 'CAND3', name: 'Prof. K. Anand', party: 'Green Planet Forum', symbol: '🌳', ward: 'Ward 14', manifesto: 'Zero-carbon wards, rainwater harvesting mandate, park rejuvenation.', votes: 85 }
+    ];
+
+    const DEFAULT_VOTERS = [
+      { epic: 'TN94/082/01928', name: 'Gurusamy (Current Voter)', age: 22, gender: 'Male', ward: 'Ward 14', hasVoted: false },
+      { epic: 'TN94/082/01929', name: 'S. Selvi', age: 34, gender: 'Female', ward: 'Ward 14', hasVoted: true },
+      { epic: 'TN94/082/01930', name: 'M. Karthikeyan', age: 41, gender: 'Male', ward: 'Ward 14', hasVoted: true }
+    ];
+
+    let candidates = getStore('ip_lab_exp17_cands', DEFAULT_CANDIDATES);
+    let voters = getStore('ip_lab_exp17_voters', DEFAULT_VOTERS);
+    let selectedCandidateId = null;
+
+    function saveData() {
+      setStore('ip_lab_exp17_cands', candidates);
+      setStore('ip_lab_exp17_voters', voters);
+      renderAll();
+    }
+
+    function renderAll() {
+      renderBallotGrid();
+      renderLiveResults();
+      renderAdminCandidates();
+      renderAdminVoters();
+    }
+
+    function sendVoterOtp() {
+      document.getElementById('voterOtpInput').value = '482910';
+      showToast('OTP sent to registered Aadhaar mobile: 482910 (Auto-filled)', 'info');
+    }
+
+    function verifyVoterLogin() {
+      const epic = document.getElementById('voterIdInput').value.trim();
+      const otp = document.getElementById('voterOtpInput').value.trim();
+
+      if (!otp) {
+        showToast('Please enter the OTP sent to your phone!', 'warning');
+        return;
+      }
+
+      const voter = voters.find(v => v.epic === epic);
+      if (voter && voter.hasVoted) {
+        showToast('Notice: You have already cast your vote! Duplicate voting is prohibited.', 'danger');
+        document.getElementById('voteReceiptBox').style.display = 'block';
+        document.getElementById('voteHashDisplay').innerText = `Receipt Hash: SHA256-b8e721a998bc430e719`;
+        return;
+      }
+
+      showToast('Voter identity authenticated! Digital Ballot Unlocked.', 'success');
+      document.getElementById('voterAuthBox').style.display = 'none';
+      document.getElementById('ballotSection').style.display = 'block';
+      renderBallotGrid();
+    }
+
+    function renderBallotGrid() {
+      const grid = document.getElementById('voterBallotGrid');
+      grid.innerHTML = candidates.map(c => `
+        <div class="candidate-card ${selectedCandidateId === c.id ? 'selected' : ''}" onclick="selectCandidate('${c.id}')">
+          <div class="candidate-symbol">${c.symbol}</div>
+          <strong style="font-size: 1.15rem; color: #fff;">${c.name}</strong>
+          <small style="color: var(--accent-secondary); margin: 0.25rem 0;">${c.party}</small>
+          <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.5rem;">${c.manifesto}</p>
+          <div style="margin-top: 1rem;">
+            <span class="badge ${selectedCandidateId === c.id ? 'badge-success' : 'badge-primary'}">
+              ${selectedCandidateId === c.id ? '✓ Selected' : 'Click to Vote'}
+            </span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function selectCandidate(id) {
+      selectedCandidateId = id;
+      renderBallotGrid();
+    }
+
+    function handleCastVote() {
+      if (!selectedCandidateId) {
+        showToast('Please select a candidate on the ballot first!', 'warning');
+        return;
+      }
+
+      const c = candidates.find(x => x.id === selectedCandidateId);
+      if (!c) return;
+
+      c.votes++;
+      const currentVoter = voters.find(v => v.epic === 'TN94/082/01928');
+      if (currentVoter) currentVoter.hasVoted = true;
+
+      saveData();
+
+      document.getElementById('ballotSection').style.display = 'none';
+      document.getElementById('voteReceiptBox').style.display = 'block';
+      const hash = 'SHA256-' + Array.from({length: 24}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+      document.getElementById('voteHashDisplay').innerText = `Cryptographic VVPAT Hash: ${hash}`;
+
+      showToast('Vote cast successfully! Election Commission digital receipt generated.', 'success');
+    }
+
+    function renderLiveResults() {
+      const container = document.getElementById('adminLiveResultsContainer');
+      const totalVotes = candidates.reduce((a, b) => a + b.votes, 0) || 1;
+
+      container.innerHTML = candidates.map(c => {
+        const pct = ((c.votes / totalVotes) * 100).toFixed(1);
+        return `
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem;">
+            <div class="flex justify-between items-center">
+              <div>
+                <span style="font-size: 1.3rem;">${c.symbol}</span> <strong>${c.name}</strong> &bull; <small style="color: var(--text-secondary);">${c.party}</small>
+              </div>
+              <div>
+                <strong style="color: var(--accent-primary); font-size: 1.2rem;">${c.votes} Votes</strong> (${pct}%)
+              </div>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" style="width: ${pct}%;"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderAdminCandidates() {
+      const tbody = document.getElementById('adminCandidatesTableBody');
+      tbody.innerHTML = candidates.map(c => `
+        <tr>
+          <td><span style="font-size: 1.7rem;">${c.symbol}</span></td>
+          <td><strong>${c.name}</strong></td>
+          <td>${c.party}</td>
+          <td><span class="badge badge-info">${c.ward}</span></td>
+          <td><small style="color: var(--text-secondary);">${c.manifesto}</small></td>
+          <td><strong>${c.votes}</strong></td>
+          <td><button class="btn btn-danger btn-sm" onclick="deleteCandidate('${c.id}')">Disqualify</button></td>
+        </tr>
+      `).join('');
+    }
+
+    function deleteCandidate(id) {
+      candidates = candidates.filter(c => c.id !== id);
+      saveData();
+      showToast('Candidate disqualified from election', 'warning');
+    }
+
+    function renderAdminVoters() {
+      const tbody = document.getElementById('adminVoterListBody');
+      tbody.innerHTML = voters.map(v => `
+        <tr>
+          <td><code>${v.epic}</code></td>
+          <td><strong>${v.name}</strong></td>
+          <td>${v.age} / ${v.gender}</td>
+          <td>${v.ward}</td>
+          <td><span class="badge ${v.hasVoted ? 'badge-success' : 'badge-warning'}">${v.hasVoted ? 'Voted' : 'Not Yet Voted'}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function importSampleVoters() {
+      voters.push(
+        { epic: 'TN94/082/01931', name: 'Anitha Ramesh', age: 29, gender: 'Female', ward: 'Ward 14', hasVoted: false },
+        { epic: 'TN94/082/01932', name: 'K. Balasubramanian', age: 52, gender: 'Male', ward: 'Ward 14', hasVoted: false }
+      );
+      saveData();
+      showToast('Imported 2 additional verified electoral roll records!', 'success');
+    }
+
+    function handleCreateCandidate(e) {
+      e.preventDefault();
+      const name = document.getElementById('newCandName').value.trim();
+      const party = document.getElementById('newCandParty').value.trim();
+      const symbol = document.getElementById('newCandSymbol').value.trim() || '🕊️';
+      const ward = document.getElementById('newCandWard').value.trim();
+      const manifesto = document.getElementById('newCandManifesto').value.trim();
+
+      candidates.push({
+        id: 'CAND' + (candidates.length + 1),
+        name, party, symbol, ward, manifesto, votes: 0
+      });
+
+      saveData();
+      closeModal('addCandidateModal');
+      e.target.reset();
+      showToast(`Nomination registered for ${name}!`, 'success');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initRoleSwitcher();
+      renderAll();
+    });
+  </script>
+</body>
+</html>

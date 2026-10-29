@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exp 5: Online Flight Reservation System</title>
+  <link rel="stylesheet" href="../../shared/css/app.css">
+  <style>
+    @media print {
+      body * { visibility: hidden; }
+      #printableTicket, #printableTicket * { visibility: visible; }
+      #printableTicket { position: absolute; left: 0; top: 0; width: 100%; }
+      .app-header, .btn, .modal-close { display: none !important; }
+    }
+    .boarding-pass {
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border: 2px dashed #6366f1;
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      position: relative;
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="nav-container">
+      <a href="../../index.html" class="brand">
+        ✈️ <span>AeroWing Airways</span>
+        <span class="brand-badge">Exp 5</span>
+      </a>
+      <div class="role-switcher">
+        <button class="role-btn active" data-role="user">Passenger</button>
+        <button class="role-btn" data-role="admin">Airline Admin</button>
+      </div>
+      <a href="../../index.html" class="back-hub-btn">← All Experiments</a>
+    </div>
+  </header>
+
+  <main class="app-container">
+    <!-- PASSENGER VIEW -->
+    <div data-role-view="user">
+      <!-- Search Flights -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🔍 Search Domestic & International Flights</div>
+        </div>
+        <form onsubmit="handleSearchFlights(event)" class="form-grid">
+          <div class="form-group">
+            <label class="form-label">From City / Airport</label>
+            <select id="userFlightFrom" class="form-select">
+              <option value="DEL">Delhi (DEL)</option>
+              <option value="MAA">Chennai (MAA)</option>
+              <option value="BOM">Mumbai (BOM)</option>
+              <option value="BLR">Bangalore (BLR)</option>
+              <option value="DXB">Dubai (DXB)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">To Destination</label>
+            <select id="userFlightTo" class="form-select">
+              <option value="BOM">Mumbai (BOM)</option>
+              <option value="DEL">Delhi (DEL)</option>
+              <option value="MAA">Chennai (MAA)</option>
+              <option value="BLR">Bangalore (BLR)</option>
+              <option value="DXB">Dubai (DXB)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Departure Date</label>
+            <input type="date" id="userFlightDate" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Travel Cabin Class</label>
+            <select id="userCabinClass" class="form-select">
+              <option value="Economy">Economy</option>
+              <option value="Business">Business</option>
+            </select>
+          </div>
+          <div class="form-group" style="align-self: flex-end;">
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Search Flights</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Flight Results List -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🛫 Flight Schedules & Live Seat Inventory</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Flight No</th>
+                <th>Airlines</th>
+                <th>Route</th>
+                <th>Departure - Arrival</th>
+                <th>Duration</th>
+                <th>Seats (Econ / Biz)</th>
+                <th>Starting Price</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="userFlightsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- My Booked Tickets & E-Ticket Boarding Pass -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🧳 My Booked Tickets & Boarding Passes</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Booking Ref</th>
+                <th>Passenger</th>
+                <th>Flight</th>
+                <th>Route</th>
+                <th>Date & Time</th>
+                <th>Seat & Class</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="userTicketTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Customer Feedback Section -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">⭐ Flight Experience & Customer Feedback</div>
+        </div>
+        <form onsubmit="handleSendFeedback(event)" class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Flight Travelled</label>
+            <select id="fbFlightSelect" class="form-select"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Rating</label>
+            <select id="fbRating" class="form-select">
+              <option value="5">⭐⭐⭐⭐⭐ Excellent (5/5)</option>
+              <option value="4">⭐⭐⭐⭐ Very Good (4/5)</option>
+              <option value="3">⭐⭐⭐ Average (3/5)</option>
+            </select>
+          </div>
+          <div class="form-group" style="grid-column: span 2;">
+            <label class="form-label">Comments / In-flight Experience</label>
+            <input type="text" id="fbComments" class="form-control" placeholder="Food quality, cabin crew friendliness..." required>
+          </div>
+          <div class="form-group" style="align-self: flex-end;">
+            <button type="submit" class="btn btn-primary">Submit Review</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- AIRLINE ADMIN VIEW -->
+    <div data-role-view="admin" style="display: none;">
+      <!-- Stats & Financials -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Scheduled Flights</span>
+          <span class="stat-value" id="adminFlightCount">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Confirmed Passengers</span>
+          <span class="stat-value" id="adminPassengerCount">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Total Booking Revenue</span>
+          <span class="stat-value" id="adminRevenueCount">₹0</span>
+        </div>
+      </div>
+
+      <!-- Manage Flight Schedules & Seat Inventory -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🛠️ Manage Airline Schedules & Inventory</div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('addFlightModal')">+ Schedule New Flight</button>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Flight No</th>
+                <th>Aircraft</th>
+                <th>Route</th>
+                <th>Timing</th>
+                <th>Economy Seats</th>
+                <th>Business Seats</th>
+                <th>Econ Price</th>
+                <th>Biz Price</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminFlightTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Admin Bookings Manifest -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📊 Passenger Manifest & Revenue Audit</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Booking Ref</th>
+                <th>Passenger</th>
+                <th>Flight No</th>
+                <th>Class & Seat</th>
+                <th>Total Paid</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="adminManifestBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Flight Booking & Payment Modal -->
+  <div id="flightBookingModal" class="modal-overlay">
+    <div class="modal" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 class="card-title" id="flightModalTitle">Confirm Flight Booking</h3>
+        <button class="modal-close" onclick="closeModal('flightBookingModal')">&times;</button>
+      </div>
+      <form onsubmit="handleConfirmFlightBooking(event)">
+        <div class="modal-body">
+          <input type="hidden" id="fbmFlightId">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Passenger Full Name</label>
+              <input type="text" id="fbmPassName" class="form-control" value="Arun Balaji" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Passport / Govt ID No</label>
+              <input type="text" id="fbmGovtId" class="form-control" value="Z9841203" required>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Cabin Class</label>
+              <select id="fbmCabinClass" class="form-select" onchange="updateFlightModalFare()">
+                <option value="Economy">Economy Class</option>
+                <option value="Business">Business Class</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Seat Preference</label>
+              <select id="fbmSeatPref" class="form-select">
+                <option value="Window (12A)">Window (12A)</option>
+                <option value="Aisle (12C)">Aisle (12C)</option>
+                <option value="Extra Legroom (14D)">Extra Legroom (14D)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Integrated Payment Gateway Module -->
+          <div style="background: rgba(15,23,42,0.9); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; margin-top: 1rem;">
+            <strong style="color: var(--accent-primary); display: block; margin-bottom: 0.5rem;">💳 Secure Payment Gateway</strong>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Card Number</label>
+                <input type="text" class="form-control" value="4532 •••• •••• 8821" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Expiry / CVV</label>
+                <input type="text" class="form-control" value="09/28 | 345" required>
+              </div>
+            </div>
+            <div class="flex justify-between items-center" style="margin-top: 0.5rem; font-size: 1.15rem;">
+              <span>Total Amount:</span>
+              <strong id="fbmTotalFare" style="color: var(--success);">₹4,500</strong>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('flightBookingModal')">Cancel</button>
+          <button type="submit" class="btn btn-success">Authorize Payment & Issue Ticket</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Print Boarding Pass Modal -->
+  <div id="printTicketModal" class="modal-overlay">
+    <div class="modal" style="max-width: 650px;">
+      <div class="modal-header">
+        <h3 class="card-title">Electronic Flight Boarding Pass</h3>
+        <button class="modal-close" onclick="closeModal('printTicketModal')">&times;</button>
+      </div>
+      <div class="modal-body" id="printableTicket">
+        <div class="boarding-pass">
+          <div class="flex justify-between items-center mb-1" style="border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 0.75rem;">
+            <div>
+              <h2 style="color: var(--accent-primary); margin:0;">AeroWing Airlines</h2>
+              <small style="color: var(--text-secondary);">Boarding Pass & E-Ticket Receipt</small>
+            </div>
+            <div class="text-right">
+              <span class="badge badge-success">CONFIRMED</span>
+              <div style="font-size: 1.1rem; font-weight: 700; margin-top: 0.25rem;" id="bpRef">AW-9921</div>
+            </div>
+          </div>
+          <div class="form-grid" style="margin: 1rem 0;">
+            <div>
+              <small style="color: var(--text-secondary);">PASSENGER</small>
+              <div style="font-weight: 700;" id="bpName">Arun Balaji</div>
+            </div>
+            <div>
+              <small style="color: var(--text-secondary);">FLIGHT</small>
+              <div style="font-weight: 700;" id="bpFlight">AW-302 (Boeing 737)</div>
+            </div>
+            <div>
+              <small style="color: var(--text-secondary);">CLASS & SEAT</small>
+              <div style="font-weight: 700; color: var(--accent-primary);" id="bpSeat">Economy | 12A</div>
+            </div>
+            <div>
+              <small style="color: var(--text-secondary);">DATE & TIME</small>
+              <div style="font-weight: 700;" id="bpDateTime">2026-03-30 @ 08:30</div>
+            </div>
+          </div>
+          <div class="flex justify-between items-center" style="background: rgba(0,0,0,0.3); padding: 0.75rem 1rem; border-radius: var(--radius-md);">
+            <div>
+              <small style="color: var(--text-secondary);">BOARDING GATE</small>
+              <div style="font-weight: 700;">Gate 4B</div>
+            </div>
+            <div>
+              <small style="color: var(--text-secondary);">BOARDING TIME</small>
+              <div style="font-weight: 700;">45 mins prior departure</div>
+            </div>
+            <div>
+              <span style="font-family: monospace; letter-spacing: 2px;">||| | ||||| ||| ||||</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('printTicketModal')">Close</button>
+        <button type="button" class="btn btn-primary" onclick="window.print()">🖨️ Print Ticket</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Flight Modal -->
+  <div id="addFlightModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="card-title">Schedule New Airline Flight</h3>
+        <button class="modal-close" onclick="closeModal('addFlightModal')">&times;</button>
+      </div>
+      <form onsubmit="handleCreateFlight(event)">
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Flight Code</label>
+              <input type="text" id="newFltNo" class="form-control" placeholder="AW-505" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Aircraft Type</label>
+              <input type="text" id="newFltAircraft" class="form-control" value="Airbus A321 Neo" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">From</label>
+              <input type="text" id="newFltFrom" class="form-control" value="DEL" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">To</label>
+              <input type="text" id="newFltTo" class="form-control" value="BOM" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Departure</label>
+              <input type="time" id="newFltDep" class="form-control" value="10:15" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Arrival</label>
+              <input type="time" id="newFltArr" class="form-control" value="12:30" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Economy Price (₹)</label>
+              <input type="number" id="newFltEconPrice" class="form-control" value="4800" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Business Price (₹)</label>
+              <input type="number" id="newFltBizPrice" class="form-control" value="11500" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('addFlightModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Schedule Flight</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../../shared/js/utils.js"></script>
+  <script>
+    const DEFAULT_FLIGHTS = [
+      {
+        id: 'FLT1',
+        no: 'AW-201',
+        aircraft: 'Boeing 737-MAX',
+        from: 'DEL',
+        to: 'BOM',
+        dep: '07:00',
+        arr: '09:10',
+        duration: '2h 10m',
+        econSeats: 45,
+        bizSeats: 8,
+        econPrice: 4200,
+        bizPrice: 11200
+      },
+      {
+        id: 'FLT2',
+        no: 'AW-305',
+        aircraft: 'Airbus A320neo',
+        from: 'MAA',
+        to: 'DEL',
+        dep: '14:20',
+        arr: '17:05',
+        duration: '2h 45m',
+        econSeats: 32,
+        bizSeats: 6,
+        econPrice: 5100,
+        bizPrice: 12500
+      },
+      {
+        id: 'FLT3',
+        no: 'AW-880',
+        aircraft: 'Boeing 787 Dreamliner',
+        from: 'BOM',
+        to: 'DXB',
+        dep: '20:45',
+        arr: '22:30',
+        duration: '3h 15m',
+        econSeats: 18,
+        bizSeats: 12,
+        econPrice: 14500,
+        bizPrice: 31000
+      }
+    ];
+
+    const DEFAULT_PASSENGERS = [
+      {
+        ref: 'AW-7712',
+        flightId: 'FLT1',
+        flightNo: 'AW-201',
+        aircraft: 'Boeing 737-MAX',
+        name: 'Arun Balaji',
+        govtId: 'Z9841203',
+        route: 'DEL → BOM',
+        date: '2026-03-30',
+        time: '07:00',
+        cabin: 'Economy',
+        seat: '12A',
+        paid: 4200,
+        status: 'Confirmed'
+      }
+    ];
+
+    let flights = getStore('ip_lab_exp5_flights', DEFAULT_FLIGHTS);
+    let bookings = getStore('ip_lab_exp5_bookings', DEFAULT_PASSENGERS);
+
+    function saveData() {
+      setStore('ip_lab_exp5_flights', flights);
+      setStore('ip_lab_exp5_bookings', bookings);
+      renderAll();
+    }
+
+    function renderAll() {
+      renderUserFlights();
+      renderUserBookings();
+      renderAdminFlights();
+      renderAdminManifest();
+      populateFeedbackSelect();
+    }
+
+    function renderUserFlights() {
+      const from = document.getElementById('userFlightFrom').value;
+      const to = document.getElementById('userFlightTo').value;
+      const tbody = document.getElementById('userFlightsTableBody');
+
+      tbody.innerHTML = flights.map(f => `
+        <tr>
+          <td><code>${f.no}</code></td>
+          <td><strong>AeroWing</strong><br><small style="color:var(--text-secondary);">${f.aircraft}</small></td>
+          <td><strong>${f.from} ➔ ${f.to}</strong></td>
+          <td>${f.dep} - ${f.arr}</td>
+          <td><small>${f.duration}</small></td>
+          <td>
+            <span class="badge ${f.econSeats > 0 ? 'badge-success' : 'badge-danger'}">Econ: ${f.econSeats}</span>
+            <span class="badge ${f.bizSeats > 0 ? 'badge-primary' : 'badge-danger'}">Biz: ${f.bizSeats}</span>
+          </td>
+          <td><strong style="color:var(--accent-primary);">₹${f.econPrice}</strong></td>
+          <td>
+            <button class="btn btn-primary btn-sm" onclick="openFlightBooking('${f.id}')">Book Seat</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openFlightBooking(fltId) {
+      const f = flights.find(x => x.id === fltId);
+      if (!f) return;
+      document.getElementById('fbmFlightId').value = f.id;
+      document.getElementById('flightModalTitle').innerText = `Book ${f.no}: ${f.from} ➔ ${f.to}`;
+      updateFlightModalFare();
+      openModal('flightBookingModal');
+    }
+
+    function updateFlightModalFare() {
+      const fId = document.getElementById('fbmFlightId').value;
+      const f = flights.find(x => x.id === fId);
+      if (!f) return;
+      const cabin = document.getElementById('fbmCabinClass').value;
+      const price = cabin === 'Business' ? f.bizPrice : f.econPrice;
+      document.getElementById('fbmTotalFare').innerText = `₹${price}`;
+    }
+
+    function handleConfirmFlightBooking(e) {
+      e.preventDefault();
+      const fId = document.getElementById('fbmFlightId').value;
+      const f = flights.find(x => x.id === fId);
+      if (!f) return;
+
+      const cabin = document.getElementById('fbmCabinClass').value;
+      if (cabin === 'Economy' && f.econSeats <= 0) {
+        showToast('Economy seats are sold out on this flight!', 'danger');
+        return;
+      }
+      if (cabin === 'Business' && f.bizSeats <= 0) {
+        showToast('Business seats are sold out on this flight!', 'danger');
+        return;
+      }
+
+      if (cabin === 'Economy') f.econSeats--;
+      else f.bizSeats--;
+
+      const ref = 'AW-' + Math.floor(1000 + Math.random() * 9000);
+      const name = document.getElementById('fbmPassName').value.trim();
+      const seat = document.getElementById('fbmSeatPref').value;
+      const price = cabin === 'Business' ? f.bizPrice : f.econPrice;
+      const date = document.getElementById('userFlightDate').value || '2026-03-30';
+
+      const ticket = {
+        ref,
+        flightId: f.id,
+        flightNo: f.no,
+        aircraft: f.aircraft,
+        name,
+        govtId: document.getElementById('fbmGovtId').value.trim(),
+        route: `${f.from} → ${f.to}`,
+        date,
+        time: f.dep,
+        cabin,
+        seat,
+        paid: price,
+        status: 'Confirmed'
+      };
+
+      bookings.unshift(ticket);
+      saveData();
+      closeModal('flightBookingModal');
+      showToast(`Flight ticket booked! Confirmation code: ${ref}`, 'success');
+    }
+
+    function renderUserBookings() {
+      const tbody = document.getElementById('userTicketTableBody');
+      tbody.innerHTML = bookings.map(b => `
+        <tr>
+          <td><code>${b.ref}</code></td>
+          <td><strong>${b.name}</strong></td>
+          <td>${b.flightNo}</td>
+          <td>${b.route}</td>
+          <td>${formatDate(b.date)} @ ${b.time}</td>
+          <td><span class="badge badge-info">${b.cabin}</span> <small>${b.seat}</small></td>
+          <td><span class="badge ${b.status === 'Confirmed' ? 'badge-success' : 'badge-danger'}">${b.status}</span></td>
+          <td>
+            <button class="btn btn-secondary btn-sm" onclick="showBoardingPass('${b.ref}')">🖨️ Boarding Pass</button>
+            ${b.status === 'Confirmed' ? `<button class="btn btn-danger btn-sm" onclick="cancelFlight('${b.ref}')">Cancel</button>` : ''}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function showBoardingPass(ref) {
+      const b = bookings.find(x => x.ref === ref);
+      if (!b) return;
+      document.getElementById('bpRef').innerText = b.ref;
+      document.getElementById('bpName').innerText = b.name;
+      document.getElementById('bpFlight').innerText = `${b.flightNo} (${b.aircraft})`;
+      document.getElementById('bpSeat').innerText = `${b.cabin} Class | Seat ${b.seat}`;
+      document.getElementById('bpDateTime').innerText = `${formatDate(b.date)} @ ${b.time}`;
+      openModal('printTicketModal');
+    }
+
+    function cancelFlight(ref) {
+      const b = bookings.find(x => x.ref === ref);
+      if (b && confirm(`Cancel flight booking ${ref}? Standard refund of 80% (₹${Math.round(b.paid * 0.8)}) will be returned.`)) {
+        b.status = 'Cancelled';
+        const f = flights.find(x => x.id === b.flightId);
+        if (f) {
+          if (b.cabin === 'Economy') f.econSeats++;
+          else f.bizSeats++;
+        }
+        saveData();
+        showToast(`Flight booking ${ref} cancelled!`, 'info');
+      }
+    }
+
+    function populateFeedbackSelect() {
+      const sel = document.getElementById('fbFlightSelect');
+      sel.innerHTML = flights.map(f => `<option value="${f.no}">${f.no} (${f.from} ➔ ${f.to})</option>`).join('');
+    }
+
+    function handleSendFeedback(e) {
+      e.preventDefault();
+      showToast('Thank you! Your airline feedback has been registered.', 'success');
+      e.target.reset();
+    }
+
+    function renderAdminFlights() {
+      const tbody = document.getElementById('adminFlightTableBody');
+      tbody.innerHTML = flights.map(f => `
+        <tr>
+          <td><code>${f.no}</code></td>
+          <td>${f.aircraft}</td>
+          <td>${f.from} ➔ ${f.to}</td>
+          <td>${f.dep} - ${f.arr}</td>
+          <td><input type="number" min="0" value="${f.econSeats}" class="form-control" style="width: 70px;" onchange="updateFltSeats('${f.id}','econSeats',this.value)"></td>
+          <td><input type="number" min="0" value="${f.bizSeats}" class="form-control" style="width: 70px;" onchange="updateFltSeats('${f.id}','bizSeats',this.value)"></td>
+          <td>₹${f.econPrice}</td>
+          <td>₹${f.bizPrice}</td>
+          <td><button class="btn btn-danger btn-sm" onclick="deleteFlight('${f.id}')">Remove</button></td>
+        </tr>
+      `).join('');
+
+      document.getElementById('adminFlightCount').innerText = flights.length;
+      document.getElementById('adminPassengerCount').innerText = bookings.filter(b => b.status === 'Confirmed').length;
+      const rev = bookings.filter(b => b.status === 'Confirmed').reduce((a, b) => a + b.paid, 0);
+      document.getElementById('adminRevenueCount').innerText = `₹${rev}`;
+    }
+
+    function updateFltSeats(id, field, val) {
+      const f = flights.find(x => x.id === id);
+      if (f) {
+        f[field] = parseInt(val) || 0;
+        saveData();
+      }
+    }
+
+    function deleteFlight(id) {
+      flights = flights.filter(f => f.id !== id);
+      saveData();
+      showToast('Flight removed from schedule', 'warning');
+    }
+
+    function renderAdminManifest() {
+      const tbody = document.getElementById('adminManifestBody');
+      tbody.innerHTML = bookings.map(b => `
+        <tr>
+          <td><code>${b.ref}</code></td>
+          <td><strong>${b.name}</strong><br><small>ID: ${b.govtId}</small></td>
+          <td>${b.flightNo} (${b.route})</td>
+          <td>${b.cabin} | ${b.seat}</td>
+          <td>₹${b.paid}</td>
+          <td><span class="badge ${b.status === 'Confirmed' ? 'badge-success' : 'badge-danger'}">${b.status}</span></td>
+          <td>
+            ${b.status === 'Confirmed' ? `<button class="btn btn-danger btn-sm" onclick="cancelFlight('${b.ref}')">Cancel</button>` : `<span class="badge badge-info">Closed</span>`}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function handleCreateFlight(e) {
+      e.preventDefault();
+      const no = document.getElementById('newFltNo').value.trim();
+      const aircraft = document.getElementById('newFltAircraft').value.trim();
+      const from = document.getElementById('newFltFrom').value.trim();
+      const to = document.getElementById('newFltTo').value.trim();
+      const dep = document.getElementById('newFltDep').value;
+      const arr = document.getElementById('newFltArr').value;
+      const econPrice = parseInt(document.getElementById('newFltEconPrice').value) || 4500;
+      const bizPrice = parseInt(document.getElementById('newFltBizPrice').value) || 12000;
+
+      flights.push({
+        id: 'FLT' + (flights.length + 1),
+        no, aircraft, from, to, dep, arr, duration: '2h',
+        econSeats: 40, bizSeats: 8, econPrice, bizPrice
+      });
+      saveData();
+      closeModal('addFlightModal');
+      e.target.reset();
+      showToast(`Flight ${no} added to timetable!`, 'success');
+    }
+
+    function handleSearchFlights(e) {
+      e.preventDefault();
+      renderUserFlights();
+      showToast('Flight listings refreshed for chosen route!', 'info');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initRoleSwitcher();
+      const today = new Date('2026-03-30');
+      document.getElementById('userFlightDate').value = today.toISOString().split('T')[0];
+      renderAll();
+    });
+  </script>
+</body>
+</html>

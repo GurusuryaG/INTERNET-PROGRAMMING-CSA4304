@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exp 20: RentRide Vehicle Rental Platform</title>
+  <link rel="stylesheet" href="../../shared/css/app.css">
+  <style>
+    .fleet-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+    .fleet-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: var(--transition);
+    }
+    .fleet-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent-primary);
+    }
+    .fleet-img {
+      height: 160px;
+      background: linear-gradient(135deg, #1e1b4b, #312e81);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .fleet-body {
+      padding: 1.25rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="nav-container">
+      <a href="../../index.html" class="brand">
+        🚗 <span>RentRide Fleet</span>
+        <span class="brand-badge">Exp 20</span>
+      </a>
+      <div class="role-switcher">
+        <button class="role-btn active" data-role="user">Customer / Driver</button>
+        <button class="role-btn" data-role="admin">Fleet Administrator</button>
+      </div>
+      <a href="../../index.html" class="back-hub-btn">← All Experiments</a>
+    </div>
+  </header>
+
+  <main class="app-container">
+    <!-- CUSTOMER VIEW -->
+    <div data-role-view="user">
+      <!-- Search & Filters -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🔍 Find Cars, SUVs & Utility Trucks</div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Vehicle Category</label>
+            <select id="rideTypeFilter" class="form-select" onchange="renderFleet()">
+              <option value="all">All Vehicle Types</option>
+              <option value="Car">Sedan & Hatchback Cars</option>
+              <option value="SUV">Luxury & Off-Road SUVs</option>
+              <option value="Truck">Utility & Cargo Trucks</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Pickup Location</label>
+            <select id="rideLocFilter" class="form-select" onchange="renderFleet()">
+              <option value="all">All Hub Locations</option>
+              <option value="Chennai Airport">Chennai Airport Hub</option>
+              <option value="Bangalore Central">Bangalore Central Hub</option>
+              <option value="Coimbatore City">Coimbatore City Hub</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Rental Duration</label>
+            <select id="rideDuration" class="form-select" onchange="renderFleet()">
+              <option value="1">1 Day</option>
+              <option value="3">3 Days (Weekend Special)</option>
+              <option value="7">7 Days (Weekly Saver)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fleet Grid -->
+      <div class="fleet-grid" id="fleetDisplayGrid"></div>
+
+      <!-- User Bookings & Rental History -->
+      <div class="card mt-2">
+        <div class="card-header">
+          <div class="card-title">📜 My Vehicle Reservations & Trip Status</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Booking Ref</th>
+                <th>Vehicle</th>
+                <th>Pickup Location</th>
+                <th>Dates & Duration</th>
+                <th>Driver Name & License</th>
+                <th>Total Rental</th>
+                <th>Approval Status</th>
+              </tr>
+            </thead>
+            <tbody id="userBookingsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN VIEW -->
+    <div data-role-view="admin" style="display: none;">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Fleet Vehicles</span>
+          <span class="stat-value" id="admFleetCount">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Pending Bookings</span>
+          <span class="stat-value" id="admPendingBookings">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Fleet Revenue</span>
+          <span class="stat-value" id="admFleetRev">₹0</span>
+        </div>
+      </div>
+
+      <!-- Manage Fleet Vehicles -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🛠️ Manage Vehicle Fleet & Daily Tariffs</div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('addVehicleModal')">+ Add Vehicle to Fleet</button>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Vehicle Model</th>
+                <th>Category</th>
+                <th>Location</th>
+                <th>Rate / Day (₹)</th>
+                <th>Available Units</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminFleetTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Manage & Approve Customer Bookings -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📋 Customer Bookings Approval & Dispatch</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Ref</th>
+                <th>Customer</th>
+                <th>License No</th>
+                <th>Vehicle</th>
+                <th>Dates</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Admin Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminBookingsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Reservation Modal -->
+  <div id="rentModal" class="modal-overlay">
+    <div class="modal" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 class="card-title" id="rentModalTitle">Reserve Vehicle</h3>
+        <button class="modal-close" onclick="closeModal('rentModal')">&times;</button>
+      </div>
+      <form onsubmit="handleConfirmRental(event)">
+        <div class="modal-body">
+          <input type="hidden" id="rentVehId">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Full Name</label>
+              <input type="text" id="custName" class="form-control" value="Gurusamy (Customer)" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Contact Number</label>
+              <input type="tel" id="custPhone" class="form-control" value="9840129840" required>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Driving License Number</label>
+              <input type="text" id="custLicense" class="form-control" value="TN-022020008892" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Pickup Date</label>
+              <input type="date" id="rentPickupDate" class="form-control" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Permanent Residential Address</label>
+            <input type="text" id="custAddress" class="form-control" value="No. 44, 5th Cross, Anna Salai, Chennai - 600002" required>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: var(--radius-md);" id="rentFareSummary"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('rentModal')">Cancel</button>
+          <button type="submit" class="btn btn-success">Book & Request Approval</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Vehicle Modal for Admin -->
+  <div id="addVehicleModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="card-title">Add Vehicle to Fleet</h3>
+        <button class="modal-close" onclick="closeModal('addVehicleModal')">&times;</button>
+      </div>
+      <form onsubmit="handleCreateVehicle(event)">
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Vehicle Model & Name</label>
+              <input type="text" id="newVehName" class="form-control" placeholder="Toyota Fortuner 4x4" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Category</label>
+              <select id="newVehType" class="form-select">
+                <option value="SUV">SUV</option>
+                <option value="Car">Car</option>
+                <option value="Truck">Truck</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Hub Location</label>
+              <select id="newVehLoc" class="form-select">
+                <option value="Chennai Airport">Chennai Airport</option>
+                <option value="Bangalore Central">Bangalore Central</option>
+                <option value="Coimbatore City">Coimbatore City</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Daily Tariff (₹)</label>
+              <input type="number" id="newVehRate" class="form-control" value="4500" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Available Units</label>
+              <input type="number" id="newVehStock" class="form-control" value="3" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Emoji Icon</label>
+              <input type="text" id="newVehEmoji" class="form-control" value="🚙">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Specs & Features</label>
+            <input type="text" id="newVehSpecs" class="form-control" placeholder="7-Seater, Automatic Diesel, Panoramic Sunroof, GPS..." required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('addVehicleModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Vehicle</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../../shared/js/utils.js"></script>
+  <script>
+    const DEFAULT_FLEET = [
+      { id: 'VEH1', name: 'Hyundai Creta SX (O)', type: 'SUV', location: 'Chennai Airport', rate: 2800, stock: 5, emoji: '🚙', specs: '5-Seater, Turbo Petrol Automatic, Cruise Control' },
+      { id: 'VEH2', name: 'Honda City ZX i-VTEC', type: 'Car', location: 'Bangalore Central', rate: 2200, stock: 7, emoji: '🚗', specs: '5-Seater Sedan, CVT Automatic, Leather Seats' },
+      { id: 'VEH3', name: 'Mahindra Scorpio-N 4WD', type: 'SUV', location: 'Chennai Airport', rate: 3600, stock: 4, emoji: '🚙', specs: '7-Seater rugged off-roader with terrain modes' },
+      { id: 'VEH4', name: 'Tata Intra V30 Cargo Pickup', type: 'Truck', location: 'Coimbatore City', rate: 1800, stock: 3, emoji: '🚚', specs: 'Payload 1.3 Tons, 2.5m Cargo Deck, Power Steering' }
+    ];
+
+    const DEFAULT_BOOKINGS = [
+      {
+        id: 'RIDE-501',
+        vehId: 'VEH1',
+        vehName: 'Hyundai Creta SX (O)',
+        type: 'SUV',
+        location: 'Chennai Airport',
+        customer: 'Gurusamy (Customer)',
+        phone: '9840129840',
+        license: 'TN-022020008892',
+        address: 'No. 44, 5th Cross, Anna Salai, Chennai',
+        pickupDate: '2026-03-25',
+        days: 3,
+        total: 8400,
+        status: 'Approved & Key Allocated'
+      }
+    ];
+
+    let fleet = getStore('ip_lab_exp20_fleet', DEFAULT_FLEET);
+    let bookings = getStore('ip_lab_exp20_bookings', DEFAULT_BOOKINGS);
+
+    function saveData() {
+      setStore('ip_lab_exp20_fleet', fleet);
+      setStore('ip_lab_exp20_bookings', bookings);
+      renderAll();
+    }
+
+    function renderAll() {
+      renderFleet();
+      renderUserBookings();
+      renderAdminFleet();
+      renderAdminBookings();
+    }
+
+    function renderFleet() {
+      const type = document.getElementById('rideTypeFilter').value;
+      const loc = document.getElementById('rideLocFilter').value;
+      const days = parseInt(document.getElementById('rideDuration').value) || 1;
+
+      const filtered = fleet.filter(v => {
+        const mType = type === 'all' || v.type === type;
+        const mLoc = loc === 'all' || v.location === loc;
+        return mType && mLoc;
+      });
+
+      const grid = document.getElementById('fleetDisplayGrid');
+      grid.innerHTML = filtered.map(v => {
+        const total = v.rate * days;
+        return `
+          <div class="fleet-card">
+            <div class="fleet-img">${v.emoji}</div>
+            <div class="fleet-body">
+              <div class="flex justify-between items-center mb-1">
+                <strong style="font-size: 1.15rem; color: #fff;">${v.name}</strong>
+                <span class="badge badge-info">${v.type}</span>
+              </div>
+              <small style="color: var(--accent-secondary);">📍 Hub: ${v.location}</small>
+              <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0.5rem 0; flex: 1;">${v.specs}</p>
+              <div class="flex justify-between items-center mt-2">
+                <div>
+                  <span style="font-size: 1.35rem; font-weight: 700; color: var(--accent-primary);">₹${v.rate}</span>
+                  <small style="color: var(--text-secondary);">/ day</small>
+                </div>
+                <span class="badge ${v.stock > 0 ? 'badge-success' : 'badge-danger'}">${v.stock > 0 ? `${v.stock} Available` : 'Booked Out'}</span>
+              </div>
+              <button class="btn btn-primary btn-sm mt-2" ${v.stock <= 0 ? 'disabled' : ''} onclick="openRentModal('${v.id}')">
+                Book for ${days} Day${days > 1 ? 's' : ''} (₹${total})
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openRentModal(id) {
+      const v = fleet.find(x => x.id === id);
+      if (!v) return;
+      const days = parseInt(document.getElementById('rideDuration').value) || 1;
+      const total = v.rate * days;
+
+      document.getElementById('rentVehId').value = v.id;
+      document.getElementById('rentModalTitle').innerText = `Reserve ${v.name}`;
+      document.getElementById('rentFareSummary').innerHTML = `
+        <div class="flex justify-between"><span>Hub Location:</span> <strong>${v.location}</strong></div>
+        <div class="flex justify-between mt-1"><span>Rate & Duration:</span> <strong>₹${v.rate} × ${days} Day(s)</strong></div>
+        <div class="flex justify-between mt-1" style="font-size: 1.15rem; border-top: 1px dashed var(--border-color); padding-top: 0.5rem;">
+          <span>Total Rental Fare:</span> <strong style="color: var(--success);">₹${total}</strong>
+        </div>
+      `;
+      openModal('rentModal');
+    }
+
+    function handleConfirmRental(e) {
+      e.preventDefault();
+      const vId = document.getElementById('rentVehId').value;
+      const v = fleet.find(x => x.id === vId);
+      if (!v || v.stock <= 0) return;
+
+      const days = parseInt(document.getElementById('rideDuration').value) || 1;
+      const total = v.rate * days;
+      const ref = 'RIDE-' + Math.floor(100 + Math.random() * 900);
+      const customer = document.getElementById('custName').value.trim();
+      const phone = document.getElementById('custPhone').value.trim();
+      const license = document.getElementById('custLicense').value.trim();
+      const address = document.getElementById('custAddress').value.trim();
+      const pickupDate = document.getElementById('rentPickupDate').value || '2026-03-25';
+
+      v.stock--;
+
+      bookings.unshift({
+        id: ref,
+        vehId: v.id,
+        vehName: v.name,
+        type: v.type,
+        location: v.location,
+        customer,
+        phone,
+        license,
+        address,
+        pickupDate,
+        days,
+        total,
+        status: 'Pending Admin Verification'
+      });
+
+      saveData();
+      closeModal('rentModal');
+      showToast(`Booking ${ref} confirmed! Admin will verify license and allocate vehicle key.`, 'success');
+    }
+
+    function renderUserBookings() {
+      const tbody = document.getElementById('userBookingsTableBody');
+      tbody.innerHTML = bookings.map(b => `
+        <tr>
+          <td><code>${b.id}</code></td>
+          <td><strong>${b.vehName}</strong></td>
+          <td>${b.location}</td>
+          <td>${formatDate(b.pickupDate)} (${b.days} Days)</td>
+          <td>${b.customer}<br><small>DL: ${b.license}</small></td>
+          <td><strong>₹${b.total.toLocaleString('en-IN')}</strong></td>
+          <td><span class="badge ${b.status.includes('Approved') ? 'badge-success' : 'badge-warning'}">${b.status}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function renderAdminFleet() {
+      const tbody = document.getElementById('adminFleetTableBody');
+      tbody.innerHTML = fleet.map(v => `
+        <tr>
+          <td>${v.emoji} <strong>${v.name}</strong></td>
+          <td><span class="badge badge-info">${v.type}</span></td>
+          <td>${v.location}</td>
+          <td><input type="number" value="${v.rate}" class="form-control" style="width: 100px;" onchange="updateFleetField('${v.id}', 'rate', this.value)"></td>
+          <td><input type="number" value="${v.stock}" class="form-control" style="width: 70px;" onchange="updateFleetField('${v.id}', 'stock', this.value)"></td>
+          <td><button class="btn btn-danger btn-sm" onclick="deleteFleet('${v.id}')">Remove</button></td>
+        </tr>
+      `).join('');
+
+      document.getElementById('admFleetCount').innerText = fleet.length;
+      document.getElementById('admPendingBookings').innerText = bookings.filter(b => !b.status.includes('Approved')).length;
+      const rev = bookings.reduce((sum, b) => sum + b.total, 0);
+      document.getElementById('admFleetRev').innerText = `₹${rev.toLocaleString('en-IN')}`;
+    }
+
+    function updateFleetField(id, field, val) {
+      const v = fleet.find(x => x.id === id);
+      if (v) {
+        v[field] = parseInt(val) || 0;
+        saveData();
+      }
+    }
+
+    function deleteFleet(id) {
+      fleet = fleet.filter(x => x.id !== id);
+      saveData();
+      showToast('Vehicle removed from rental fleet', 'warning');
+    }
+
+    function renderAdminBookings() {
+      const tbody = document.getElementById('adminBookingsTableBody');
+      tbody.innerHTML = bookings.map(b => `
+        <tr>
+          <td><code>${b.id}</code></td>
+          <td><strong>${b.customer}</strong><br><small>${b.phone}</small></td>
+          <td><code>${b.license}</code></td>
+          <td>${b.vehName} (${b.type})</td>
+          <td>${b.pickupDate} (${b.days}d)</td>
+          <td>₹${b.total}</td>
+          <td><span class="badge ${b.status.includes('Approved') ? 'badge-success' : 'badge-warning'}">${b.status}</span></td>
+          <td>
+            ${!b.status.includes('Approved') ? `<button class="btn btn-success btn-sm" onclick="approveBooking('${b.id}')">Approve & Handover Key</button>` : `<span class="badge badge-success">Dispatched</span>`}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function approveBooking(id) {
+      const b = bookings.find(x => x.id === id);
+      if (b) {
+        b.status = 'Approved & Key Allocated';
+        saveData();
+        showToast(`Booking ${id} approved! Digital smart key code issued to driver.`, 'success');
+      }
+    }
+
+    function handleCreateVehicle(e) {
+      e.preventDefault();
+      const name = document.getElementById('newVehName').value.trim();
+      const type = document.getElementById('newVehType').value;
+      const location = document.getElementById('newVehLoc').value;
+      const rate = parseInt(document.getElementById('newVehRate').value) || 2500;
+      const stock = parseInt(document.getElementById('newVehStock').value) || 2;
+      const emoji = document.getElementById('newVehEmoji').value.trim() || '🚗';
+      const specs = document.getElementById('newVehSpecs').value.trim();
+
+      fleet.push({
+        id: 'VEH' + (fleet.length + 1),
+        name, type, location, rate, stock, emoji, specs
+      });
+
+      saveData();
+      closeModal('addVehicleModal');
+      e.target.reset();
+      showToast(`Vehicle "${name}" registered into rental fleet!`, 'success');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initRoleSwitcher();
+      const today = new Date('2026-03-25');
+      if (document.getElementById('rentPickupDate')) document.getElementById('rentPickupDate').value = today.toISOString().split('T')[0];
+      renderAll();
+    });
+  </script>
+</body>
+</html>

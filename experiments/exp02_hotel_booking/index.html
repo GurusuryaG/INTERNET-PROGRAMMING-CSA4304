@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exp 2: Online Hotel Room Booking Website</title>
+  <link rel="stylesheet" href="../../shared/css/app.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="nav-container">
+      <a href="../../index.html" class="brand">
+        🏨 <span>GrandPalace Stays</span>
+        <span class="brand-badge">Exp 2</span>
+      </a>
+      <div class="role-switcher">
+        <button class="role-btn active" data-role="user">Guest / User</button>
+        <button class="role-btn" data-role="admin">Hotel Administrator</button>
+      </div>
+      <a href="../../index.html" class="back-hub-btn">← All Experiments</a>
+    </div>
+  </header>
+
+  <main class="app-container">
+    <!-- GUEST / USER VIEW -->
+    <div data-role-view="user">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🔍 Check Availability & Book Room</div>
+        </div>
+        <form id="checkAvailForm" onsubmit="handleSearchRooms(event)" class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Destination / City</label>
+            <input type="text" id="userDest" class="form-control" value="Goa Beach Resort" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Check-in Date</label>
+            <input type="date" id="userCheckIn" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Check-out Date</label>
+            <input type="date" id="userCheckOut" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Guests</label>
+            <select id="userGuests" class="form-select">
+              <option value="1">1 Guest</option>
+              <option value="2" selected>2 Guests</option>
+              <option value="3">3 Guests</option>
+              <option value="4">4+ Guests</option>
+            </select>
+          </div>
+          <div class="form-group" style="align-self: flex-end;">
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Check Available Rooms</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Room Cards Grid -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🛏️ Four Featured Room Categories</div>
+        </div>
+        <div class="form-grid" id="roomsDisplayGrid"></div>
+      </div>
+
+      <!-- My Booking History -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📑 My Booking History (Manage / Modify / Cancel)</div>
+          <span class="badge badge-warning">Policy: Cancellations/Modifications allowed 3+ days before check-in</span>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Booking ID</th>
+                <th>Room Type</th>
+                <th>Check-in</th>
+                <th>Check-out</th>
+                <th>Guests</th>
+                <th>Total Paid</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="userBookingsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Static Info Pages / Tabs for User -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">ℹ️ Hotel Information & Guides</div>
+        </div>
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="tab-about">About Us</button>
+          <button class="tab-btn" data-tab="tab-qa">Customer Service Q&A</button>
+          <button class="tab-btn" data-tab="tab-travel">Local Travel & Shipping Guide</button>
+          <button class="tab-btn" data-tab="tab-privacy">Privacy Policy</button>
+        </div>
+        <div id="tab-about" class="tab-content active">
+          <div id="staticAboutContent" style="color: var(--text-secondary); line-height: 1.8;"></div>
+        </div>
+        <div id="tab-qa" class="tab-content">
+          <div id="staticQAContent" style="color: var(--text-secondary); line-height: 1.8;"></div>
+        </div>
+        <div id="tab-travel" class="tab-content">
+          <div id="staticTravelContent" style="color: var(--text-secondary); line-height: 1.8;"></div>
+        </div>
+        <div id="tab-privacy" class="tab-content">
+          <div id="staticPrivacyContent" style="color: var(--text-secondary); line-height: 1.8;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN VIEW -->
+    <div data-role-view="admin" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🛠️ Room Inventory & Pricing (All 4 Room Types)</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Room Type</th>
+                <th>Total Rooms</th>
+                <th>Available</th>
+                <th>Price / Night (₹)</th>
+                <th>Amenities</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="adminRoomsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📋 Manage Customer Bookings (Modify / Cancel)</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Guest Name</th>
+                <th>Room</th>
+                <th>Check-in</th>
+                <th>Check-out</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Admin Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminBookingsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📝 Modify Static Website Pages</div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">About Us Text</label>
+            <textarea id="editAboutUs" class="form-control" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Customer Service Q&A</label>
+            <textarea id="editQA" class="form-control" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Local Travel Guide</label>
+            <textarea id="editTravel" class="form-control" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Privacy Policy</label>
+            <textarea id="editPrivacy" class="form-control" rows="3"></textarea>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="saveStaticPages()">Save Static Page Changes</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Booking Modal -->
+  <div id="bookingModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="card-title" id="modalRoomTitle">Confirm Room Booking</h3>
+        <button class="modal-close" onclick="closeModal('bookingModal')">&times;</button>
+      </div>
+      <form id="bookingConfirmForm" onsubmit="handleConfirmBooking(event)">
+        <div class="modal-body">
+          <input type="hidden" id="modalRoomKey">
+          <div class="form-group">
+            <label class="form-label">Guest Full Name</label>
+            <input type="text" id="modalGuestName" class="form-control" value="Gurusamy M" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email ID</label>
+            <input type="email" id="modalGuestEmail" class="form-control" value="guest@example.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone Number</label>
+            <input type="tel" id="modalGuestPhone" class="form-control" value="+91 9876543210" required>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Check-in</label>
+              <input type="date" id="modalCheckIn" class="form-control" required readonly>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Check-out</label>
+              <input type="date" id="modalCheckOut" class="form-control" required readonly>
+            </div>
+          </div>
+          <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: var(--radius-md);" id="modalPriceSummary"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('bookingModal')">Cancel</button>
+          <button type="submit" class="btn btn-success">Pay & Confirm Booking</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modify Booking Modal -->
+  <div id="modifyModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="card-title">Modify Booking Dates</h3>
+        <button class="modal-close" onclick="closeModal('modifyModal')">&times;</button>
+      </div>
+      <form id="modifyForm" onsubmit="handleSaveModification(event)">
+        <div class="modal-body">
+          <input type="hidden" id="modifyBookingId">
+          <div class="form-group">
+            <label class="form-label">New Check-in Date</label>
+            <input type="date" id="modifyCheckIn" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">New Check-out Date</label>
+            <input type="date" id="modifyCheckOut" class="form-control" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modifyModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Update Dates</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../../shared/js/utils.js"></script>
+  <script>
+    const DEFAULT_ROOMS = [
+      { id: 'single', name: 'Single Standard Room', total: 10, available: 6, price: 1800, amenities: '1 Single Bed, Wi-Fi, AC, Work Desk' },
+      { id: 'double', name: 'Double Deluxe Room', total: 12, available: 8, price: 2800, amenities: '1 Queen Bed, Balcony, Mini-bar, Smart TV' },
+      { id: 'deluxe', name: 'Deluxe Ocean View', total: 8, available: 4, price: 4500, amenities: 'King Bed, Sea Facing, Jacuzzi, Breakfast Included' },
+      { id: 'suite', name: 'Executive Presidential Suite', total: 4, available: 2, price: 8000, amenities: '2 Bedrooms, Living Hall, Private Butler, Lounge Access' }
+    ];
+
+    const DEFAULT_BOOKINGS = [
+      { id: 'HTL-891', guestName: 'Gurusamy M', roomKey: 'deluxe', roomName: 'Deluxe Ocean View', checkIn: '2026-04-10', checkOut: '2026-04-13', guests: 2, totalPaid: 13500, status: 'Confirmed' },
+      { id: 'HTL-892', guestName: 'Anita Roy', roomKey: 'single', roomName: 'Single Standard Room', checkIn: '2026-04-01', checkOut: '2026-04-03', guests: 1, totalPaid: 3600, status: 'Confirmed' }
+    ];
+
+    const DEFAULT_STATIC = {
+      about: "GrandPalace Resort & Stays offers world-class hospitality nestled in prime scenic locations. Founded with a vision to provide unforgettable vacation retreats with 24/7 personalized guest experiences.",
+      qa: "Q: What is the check-in and check-out time?\nA: Check-in is 2:00 PM and check-out is 11:00 AM.\n\nQ: Is early cancellation free?\nA: Yes! Bookings can be cancelled or modified up to 3 days before arrival at 0% penalty fee.",
+      travel: "Distance from nearest international airport: 18km. Free shuttle transfers are available every 45 minutes. Local cab rentals and coastal cruises can be booked directly at the concierge.",
+      privacy: "We uphold strict confidentiality standards. Personal credit card details are encrypted and never stored on open servers. Personal identity proofs are managed according to international hospitality compliance standards."
+    };
+
+    let rooms = getStore('ip_lab_exp2_rooms', DEFAULT_ROOMS);
+    let bookings = getStore('ip_lab_exp2_bookings', DEFAULT_BOOKINGS);
+    let staticContent = getStore('ip_lab_exp2_static', DEFAULT_STATIC);
+
+    function saveData() {
+      setStore('ip_lab_exp2_rooms', rooms);
+      setStore('ip_lab_exp2_bookings', bookings);
+      setStore('ip_lab_exp2_static', staticContent);
+      renderAll();
+    }
+
+    function renderAll() {
+      renderRoomCards();
+      renderUserBookings();
+      renderAdminRooms();
+      renderAdminBookings();
+      renderStaticPages();
+    }
+
+    function renderRoomCards() {
+      const grid = document.getElementById('roomsDisplayGrid');
+      grid.innerHTML = rooms.map(r => `
+        <div class="card" style="margin-bottom:0; background: var(--bg-secondary);">
+          <div class="card-header" style="border-bottom:none; padding-bottom:0;">
+            <strong style="font-size: 1.1rem;">${r.name}</strong>
+          </div>
+          <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0.5rem 0;">${r.amenities}</p>
+          <div class="flex justify-between items-center" style="margin-top: 1rem;">
+            <div>
+              <span style="font-size: 1.3rem; font-weight: 700; color: var(--accent-primary);">₹${r.price}</span>
+              <span style="font-size: 0.75rem; color: var(--text-secondary);">/night</span>
+            </div>
+            <span class="badge ${r.available > 0 ? 'badge-success' : 'badge-danger'}">${r.available} Left</span>
+          </div>
+          <button class="btn btn-primary btn-sm" style="width: 100%; margin-top: 1rem;" 
+            ${r.available <= 0 ? 'disabled' : ''} onclick="promptBooking('${r.id}')">
+            ${r.available > 0 ? 'Book This Room' : 'Sold Out'}
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function promptBooking(roomId) {
+      const room = rooms.find(r => r.id === roomId);
+      if (!room || room.available <= 0) return;
+      
+      const checkIn = document.getElementById('userCheckIn').value;
+      const checkOut = document.getElementById('userCheckOut').value;
+      if (!checkIn || !checkOut) {
+        showToast('Please select Check-in and Check-out dates first!', 'warning');
+        return;
+      }
+
+      const nights = Math.max(1, Math.round((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)));
+      const total = nights * room.price;
+
+      document.getElementById('modalRoomKey').value = room.id;
+      document.getElementById('modalRoomTitle').innerText = `Book ${room.name}`;
+      document.getElementById('modalCheckIn').value = checkIn;
+      document.getElementById('modalCheckOut').value = checkOut;
+      document.getElementById('modalPriceSummary').innerHTML = `
+        <div class="flex justify-between" style="font-size: 0.9rem;"><span>Duration:</span> <strong>${nights} Night(s)</strong></div>
+        <div class="flex justify-between" style="font-size: 0.9rem; margin-top: 0.3rem;"><span>Rate:</span> <strong>₹${room.price} / night</strong></div>
+        <div class="flex justify-between" style="font-size: 1.1rem; margin-top: 0.5rem; border-top: 1px dashed var(--border-color); padding-top: 0.5rem;">
+          <span>Total Payable:</span> <strong style="color: var(--success);">₹${total}</strong>
+        </div>
+      `;
+      openModal('bookingModal');
+    }
+
+    function handleConfirmBooking(e) {
+      e.preventDefault();
+      const roomKey = document.getElementById('modalRoomKey').value;
+      const room = rooms.find(r => r.id === roomKey);
+      if (!room || room.available <= 0) {
+        showToast('Selected room is no longer available', 'danger');
+        return;
+      }
+
+      const checkIn = document.getElementById('modalCheckIn').value;
+      const checkOut = document.getElementById('modalCheckOut').value;
+      const nights = Math.max(1, Math.round((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)));
+      const totalPaid = nights * room.price;
+
+      const newBooking = {
+        id: 'HTL-' + Math.floor(100 + Math.random() * 900),
+        guestName: document.getElementById('modalGuestName').value.trim(),
+        roomKey: room.id,
+        roomName: room.name,
+        checkIn,
+        checkOut,
+        guests: parseInt(document.getElementById('userGuests').value) || 2,
+        totalPaid,
+        status: 'Confirmed'
+      };
+
+      room.available--;
+      bookings.unshift(newBooking);
+      saveData();
+      closeModal('bookingModal');
+      showToast(`Booking ${newBooking.id} confirmed! Confirmation sent to ${document.getElementById('modalGuestEmail').value}`, 'success');
+    }
+
+    // 3 days rule check
+    function canModifyOrCancel(checkInDateStr) {
+      const today = new Date('2026-03-19');
+      const arrival = new Date(checkInDateStr);
+      const diffDays = Math.ceil((arrival - today) / (1000 * 60 * 60 * 24));
+      return diffDays >= 3;
+    }
+
+    function renderUserBookings() {
+      const tbody = document.getElementById('userBookingsBody');
+      tbody.innerHTML = bookings.map(b => {
+        const eligible = canModifyOrCancel(b.checkIn) && b.status === 'Confirmed';
+        return `
+          <tr>
+            <td><code>${b.id}</code></td>
+            <td><strong>${b.roomName}</strong></td>
+            <td>${formatDate(b.checkIn)}</td>
+            <td>${formatDate(b.checkOut)}</td>
+            <td>${b.guests} Guests</td>
+            <td><strong>₹${b.totalPaid}</strong></td>
+            <td><span class="badge ${b.status === 'Confirmed' ? 'badge-success' : 'badge-danger'}">${b.status}</span></td>
+            <td>
+              ${b.status === 'Confirmed' ? `
+                <button class="btn btn-secondary btn-sm" ${!eligible ? 'disabled title="Allowed only 3+ days before arrival"' : ''} onclick="openModifyBooking('${b.id}')">Modify</button>
+                <button class="btn btn-danger btn-sm" ${!eligible ? 'disabled title="Allowed only 3+ days before arrival"' : ''} onclick="cancelBooking('${b.id}')">Cancel</button>
+              ` : `<span class="badge badge-info">Closed</span>`}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function openModifyBooking(id) {
+      const b = bookings.find(x => x.id === id);
+      if (!b) return;
+      document.getElementById('modifyBookingId').value = b.id;
+      document.getElementById('modifyCheckIn').value = b.checkIn;
+      document.getElementById('modifyCheckOut').value = b.checkOut;
+      openModal('modifyModal');
+    }
+
+    function handleSaveModification(e) {
+      e.preventDefault();
+      const id = document.getElementById('modifyBookingId').value;
+      const b = bookings.find(x => x.id === id);
+      if (b) {
+        b.checkIn = document.getElementById('modifyCheckIn').value;
+        b.checkOut = document.getElementById('modifyCheckOut').value;
+        saveData();
+        closeModal('modifyModal');
+        showToast(`Booking ${b.id} dates updated successfully!`, 'success');
+      }
+    }
+
+    function cancelBooking(id) {
+      const b = bookings.find(x => x.id === id);
+      if (b && confirm(`Are you sure you want to cancel booking ${b.id}? Full refund will be credited.`)) {
+        b.status = 'Cancelled';
+        const room = rooms.find(r => r.id === b.roomKey);
+        if (room) room.available++;
+        saveData();
+        showToast(`Booking ${b.id} cancelled. Refund of ₹${b.totalPaid} initiated.`, 'info');
+      }
+    }
+
+    function renderAdminRooms() {
+      const tbody = document.getElementById('adminRoomsTableBody');
+      tbody.innerHTML = rooms.map(r => `
+        <tr>
+          <td><strong>${r.name}</strong></td>
+          <td><input type="number" min="1" value="${r.total}" class="form-control" style="width: 70px;" onchange="updateRoomStock('${r.id}', 'total', this.value)"></td>
+          <td><input type="number" min="0" value="${r.available}" class="form-control" style="width: 70px;" onchange="updateRoomStock('${r.id}', 'available', this.value)"></td>
+          <td><input type="number" step="100" value="${r.price}" class="form-control" style="width: 100px;" onchange="updateRoomStock('${r.id}', 'price', this.value)"></td>
+          <td><span style="font-size: 0.8rem; color: var(--text-secondary);">${r.amenities}</span></td>
+          <td><span class="badge badge-success">Active</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function updateRoomStock(id, field, val) {
+      const room = rooms.find(r => r.id === id);
+      if (room) {
+        room[field] = parseInt(val) || 0;
+        saveData();
+        showToast(`Updated ${field} for ${room.name}`, 'info');
+      }
+    }
+
+    function renderAdminBookings() {
+      const tbody = document.getElementById('adminBookingsTableBody');
+      tbody.innerHTML = bookings.map(b => `
+        <tr>
+          <td><code>${b.id}</code></td>
+          <td><strong>${b.guestName}</strong></td>
+          <td>${b.roomName}</td>
+          <td>${b.checkIn}</td>
+          <td>${b.checkOut}</td>
+          <td>₹${b.totalPaid}</td>
+          <td><span class="badge ${b.status === 'Confirmed' ? 'badge-success' : 'badge-danger'}">${b.status}</span></td>
+          <td>
+            ${b.status === 'Confirmed' ? `
+              <button class="btn btn-secondary btn-sm" onclick="openModifyBooking('${b.id}')">Edit</button>
+              <button class="btn btn-danger btn-sm" onclick="cancelBooking('${b.id}')">Force Cancel</button>
+            ` : `<span class="badge badge-info">Archived</span>`}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderStaticPages() {
+      document.getElementById('staticAboutContent').innerText = staticContent.about;
+      document.getElementById('staticQAContent').innerText = staticContent.qa;
+      document.getElementById('staticTravelContent').innerText = staticContent.travel;
+      document.getElementById('staticPrivacyContent').innerText = staticContent.privacy;
+
+      document.getElementById('editAboutUs').value = staticContent.about;
+      document.getElementById('editQA').value = staticContent.qa;
+      document.getElementById('editTravel').value = staticContent.travel;
+      document.getElementById('editPrivacy').value = staticContent.privacy;
+    }
+
+    function saveStaticPages() {
+      staticContent.about = document.getElementById('editAboutUs').value;
+      staticContent.qa = document.getElementById('editQA').value;
+      staticContent.travel = document.getElementById('editTravel').value;
+      staticContent.privacy = document.getElementById('editPrivacy').value;
+      saveData();
+      showToast('Static page details updated by administrator!', 'success');
+    }
+
+    function handleSearchRooms(e) {
+      e.preventDefault();
+      showToast('Available rooms updated for selected dates!', 'success');
+      renderRoomCards();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initRoleSwitcher();
+      const inDate = new Date('2026-04-10');
+      const outDate = new Date('2026-04-13');
+      document.getElementById('userCheckIn').value = inDate.toISOString().split('T')[0];
+      document.getElementById('userCheckOut').value = outDate.toISOString().split('T')[0];
+      renderAll();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exp 10: StyleHub Online Fashion Retailer</title>
+  <link rel="stylesheet" href="../../shared/css/app.css">
+  <style>
+    .fashion-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+    .fashion-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: var(--transition);
+      position: relative;
+    }
+    .fashion-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent-primary);
+    }
+    .fashion-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: var(--accent-gradient);
+      color: #fff;
+      font-size: 0.75rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+    }
+    .fashion-img {
+      height: 180px;
+      background: linear-gradient(135deg, #312e81, #1e1b4b);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .fashion-body {
+      padding: 1.25rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="nav-container">
+      <a href="../../index.html" class="brand">
+        👗 <span>StyleHub Fashion</span>
+        <span class="brand-badge">Exp 10</span>
+      </a>
+      <div class="role-switcher">
+        <button class="role-btn active" data-role="user">Shopper</button>
+        <button class="role-btn" data-role="admin">Fashion Admin</button>
+      </div>
+      <a href="../../index.html" class="back-hub-btn">← All Experiments</a>
+    </div>
+  </header>
+
+  <main class="app-container">
+    <!-- FLASH SALE PROMO BANNER -->
+    <div class="card" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2)); border-color: rgba(99, 102, 241, 0.4);">
+      <div class="flex justify-between items-center" style="flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h3 style="color: #fff;">🔥 StyleHub Flash Season Sale: Flat 40% OFF</h3>
+          <p style="color: var(--text-secondary); font-size: 0.9rem;">Exclusive seasonal designer fits for Men, Women & Kids.</p>
+        </div>
+        <div class="flex items-center gap-1">
+          <button class="btn btn-secondary btn-sm" onclick="openModal('sizeGuideModal')">📏 Interactive Size Guide</button>
+          <button class="btn btn-primary btn-sm" onclick="openModal('cartModal')">🛍️ Cart (<span id="cartCountBadge">0</span>)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHOPPER VIEW -->
+    <div data-role-view="user">
+      <!-- Category & Collection Filters -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">✨ Filter by Wardrobe & Collection</div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Department</label>
+            <select id="genderFilter" class="form-select" onchange="renderApparel()">
+              <option value="all">All (Men, Women, Kids)</option>
+              <option value="Men">Men's Apparel</option>
+              <option value="Women">Women's Couture</option>
+              <option value="Kids">Kids & Juniors</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Occasion / Style</label>
+            <select id="styleFilter" class="form-select" onchange="renderApparel()">
+              <option value="all">All Styles</option>
+              <option value="Casual">Casual Streetwear</option>
+              <option value="Formal">Formal & Business</option>
+              <option value="Seasonal">Seasonal Festivities</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Search Apparel</label>
+            <input type="text" id="apparelSearch" class="form-control" placeholder="Blazer, Linen Shirt, Maxi Dress..." oninput="renderApparel()">
+          </div>
+        </div>
+      </div>
+
+      <!-- Apparel Grid -->
+      <div class="fashion-grid" id="fashionCatalogGrid"></div>
+
+      <!-- Customer Orders & Delivery Status -->
+      <div class="card mt-2">
+        <div class="card-header">
+          <div class="card-title">📦 My Fashion Orders & Easy Return Tracking</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Order No</th>
+                <th>Outfits</th>
+                <th>Selected Size</th>
+                <th>Amount</th>
+                <th>Tracking Status</th>
+                <th>Return Policy</th>
+              </tr>
+            </thead>
+            <tbody id="userFashionOrdersBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN VIEW -->
+    <div data-role-view="admin" style="display: none;">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Active Apparel SKUs</span>
+          <span class="stat-value" id="admTotalApparel">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Total Shipped Orders</span>
+          <span class="stat-value" id="admTotalOrders">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Fashion Revenue</span>
+          <span class="stat-value" id="admTotalSales">₹0</span>
+        </div>
+      </div>
+
+      <!-- Manage Apparel Catalogue -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🛠️ Manage Outfits & Pricing</div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('addOutfitModal')">+ Add New Apparel</button>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Apparel Name</th>
+                <th>Dept & Style</th>
+                <th>Sizes</th>
+                <th>Price (₹)</th>
+                <th>Stock</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminApparelTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Customer Checkout Details -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">👥 Customer Checkout Records</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Order No</th>
+                <th>Shopper</th>
+                <th>Address</th>
+                <th>Items & Size</th>
+                <th>Amount</th>
+                <th>Logistics Status</th>
+              </tr>
+            </thead>
+            <tbody id="adminShopperOrdersBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Size Guide Modal -->
+  <div id="sizeGuideModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="card-title">📏 International Size Guide</h3>
+        <button class="modal-close" onclick="closeModal('sizeGuideModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Size</th>
+              <th>Chest (Inches)</th>
+              <th>Waist (Inches)</th>
+              <th>Length</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>S</strong></td><td>36 - 38"</td><td>28 - 30"</td><td>Standard</td></tr>
+            <tr><td><strong>M</strong></td><td>38 - 40"</td><td>32 - 34"</td><td>Standard</td></tr>
+            <tr><td><strong>L</strong></td><td>40 - 42"</td><td>34 - 36"</td><td>Regular</td></tr>
+            <tr><td><strong>XL</strong></td><td>42 - 44"</td><td>36 - 38"</td><td>Comfort Fit</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('sizeGuideModal')">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cart Modal -->
+  <div id="cartModal" class="modal-overlay">
+    <div class="modal" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 class="card-title">🛍️ Shopping Bag</h3>
+        <button class="modal-close" onclick="closeModal('cartModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="cartItemsList"></div>
+        <div style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: var(--radius-md); margin-top: 1rem;" id="cartTotalSummary"></div>
+
+        <form onsubmit="handleFashionCheckout(event)" style="margin-top: 1.25rem;">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Full Name</label>
+              <input type="text" id="shName" class="form-control" value="Meera N" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phone</label>
+              <input type="tel" id="shPhone" class="form-control" value="9840294821" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Delivery Shipping Address</label>
+            <input type="text" id="shAddress" class="form-control" value="14, Sterling Road, Nungambakkam, Chennai - 600034" required>
+          </div>
+          <div class="modal-footer" style="padding: 1rem 0 0 0; border-top: none;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('cartModal')">Back</button>
+            <button type="submit" class="btn btn-success" id="payFashionBtn">Place Order</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Outfit Modal -->
+  <div id="addOutfitModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="card-title">Add Apparel to Catalog</h3>
+        <button class="modal-close" onclick="closeModal('addOutfitModal')">&times;</button>
+      </div>
+      <form onsubmit="handleCreateOutfit(event)">
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Apparel Title</label>
+              <input type="text" id="newFTitle" class="form-control" placeholder="Italian Slim-Fit Blazer" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Department</label>
+              <select id="newFDept" class="form-select">
+                <option value="Men">Men</option>
+                <option value="Women">Women</option>
+                <option value="Kids">Kids</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Style / Occasion</label>
+              <select id="newFStyle" class="form-select">
+                <option value="Casual">Casual</option>
+                <option value="Formal">Formal</option>
+                <option value="Seasonal">Seasonal</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Price (₹)</label>
+              <input type="number" id="newFPrice" class="form-control" value="2499" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Stock</label>
+              <input type="number" id="newFStock" class="form-control" value="12" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Emoji</label>
+              <input type="text" id="newFEmoji" class="form-control" value="🧥">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Material & Description</label>
+            <textarea id="newFDesc" class="form-control" rows="2" placeholder="100% fine spun cotton with bespoke lapel stitching..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('addOutfitModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Apparel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../../shared/js/utils.js"></script>
+  <script>
+    const DEFAULT_FASHION = [
+      { id: 'FAS1', name: 'Navy Italian Slim-Fit Tuxedo Blazer', dept: 'Men', style: 'Formal', price: 4499, stock: 10, emoji: '🤵', desc: 'Crafted from premium wool-blend fabric with satin lapels and breathable silk inner lining.' },
+      { id: 'FAS2', name: 'Embroidered Silk Anarkali Gown', dept: 'Women', style: 'Seasonal', price: 3899, stock: 7, emoji: '👗', desc: 'Chanderi silk festive gown adorned with zardozi threadwork and matching dupatta.' },
+      { id: 'FAS3', name: 'Pure Linen Relaxed Casual Shirt', dept: 'Men', style: 'Casual', price: 1799, stock: 18, emoji: '👔', desc: 'Pre-washed 100% breathable flax linen for effortless summer comfort.' },
+      { id: 'FAS4', name: 'Juniors Organic Cotton Play Dungaree', dept: 'Kids', style: 'Casual', price: 999, stock: 15, emoji: '🧸', desc: 'Soft hypoallergenic cotton overalls with adjustable straps for active toddlers.' }
+    ];
+
+    const DEFAULT_ORDERS = [
+      {
+        id: 'SH-812',
+        customer: 'Meera N',
+        phone: '9840294821',
+        address: '14, Sterling Road, Nungambakkam, Chennai - 600034',
+        items: [{ id: 'FAS2', name: 'Embroidered Silk Anarkali Gown', price: 3899, size: 'M', qty: 1 }],
+        total: 3899,
+        status: 'Dispatched (Express Courier)'
+      }
+    ];
+
+    let apparel = getStore('ip_lab_exp10_apparel', DEFAULT_FASHION);
+    let orders = getStore('ip_lab_exp10_orders', DEFAULT_ORDERS);
+    let cart = [];
+
+    function saveData() {
+      setStore('ip_lab_exp10_apparel', apparel);
+      setStore('ip_lab_exp10_orders', orders);
+      renderAll();
+    }
+
+    function renderAll() {
+      renderApparel();
+      renderCartUI();
+      renderUserOrders();
+      renderAdminApparel();
+      renderAdminOrders();
+    }
+
+    function renderApparel() {
+      const q = (document.getElementById('apparelSearch').value || '').toLowerCase();
+      const dept = document.getElementById('genderFilter').value;
+      const style = document.getElementById('styleFilter').value;
+
+      const filtered = apparel.filter(a => {
+        const mQ = a.name.toLowerCase().includes(q) || a.desc.toLowerCase().includes(q);
+        const mDept = dept === 'all' || a.dept === dept;
+        const mStyle = style === 'all' || a.style === style;
+        return mQ && mDept && mStyle;
+      });
+
+      const grid = document.getElementById('fashionCatalogGrid');
+      grid.innerHTML = filtered.map(a => `
+        <div class="fashion-card">
+          <span class="fashion-badge">${a.style}</span>
+          <div class="fashion-img">${a.emoji}</div>
+          <div class="fashion-body">
+            <div class="flex justify-between items-center mb-1">
+              <strong style="font-size: 1.1rem; color: #fff;">${a.name}</strong>
+              <span class="badge badge-info">${a.dept}</span>
+            </div>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; flex: 1;">${a.desc}</p>
+            <div class="flex justify-between items-center mt-2">
+              <span style="font-size: 1.3rem; font-weight: 700; color: var(--accent-primary);">₹${a.price.toLocaleString('en-IN')}</span>
+              <span class="badge ${a.stock > 0 ? 'badge-success' : 'badge-danger'}">${a.stock > 0 ? `${a.stock} Left` : 'Sold Out'}</span>
+            </div>
+            <div class="flex gap-1 mt-2">
+              <select id="size_${a.id}" class="form-select" style="width: 80px; padding: 0.35rem 0.5rem; font-size: 0.85rem;">
+                <option value="S">S</option>
+                <option value="M" selected>M</option>
+                <option value="L">L</option>
+                <option value="XL">XL</option>
+              </select>
+              <button class="btn btn-primary btn-sm" style="flex: 1;" ${a.stock <= 0 ? 'disabled' : ''} onclick="addToCart('${a.id}')">
+                Add to Bag
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function addToCart(id) {
+      const a = apparel.find(x => x.id === id);
+      if (!a || a.stock <= 0) return;
+      const sizeElem = document.getElementById(`size_${a.id}`);
+      const size = sizeElem ? sizeElem.value : 'M';
+
+      const existing = cart.find(c => c.id === id && c.size === size);
+      if (existing) {
+        existing.qty++;
+      } else {
+        cart.push({ id: a.id, name: a.name, price: a.price, size, qty: 1 });
+      }
+      renderCartUI();
+      showToast(`Added ${a.name} (${size}) to shopping bag!`, 'success');
+    }
+
+    function renderCartUI() {
+      document.getElementById('cartCountBadge').innerText = cart.reduce((a, b) => a + b.qty, 0);
+      const list = document.getElementById('cartItemsList');
+      if (cart.length === 0) {
+        list.innerHTML = `<div class="empty-state"><p>Shopping bag is empty.</p></div>`;
+        document.getElementById('cartTotalSummary').innerHTML = 'Total: ₹0';
+        document.getElementById('payFashionBtn').disabled = true;
+        return;
+      }
+
+      document.getElementById('payFashionBtn').disabled = false;
+      const total = cart.reduce((acc, c) => acc + (c.price * c.qty), 0);
+      list.innerHTML = cart.map(c => `
+        <div class="flex justify-between items-center mb-1" style="background: rgba(255,255,255,0.03); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm);">
+          <div>
+            <strong>${c.name}</strong><br>
+            <small style="color: var(--text-secondary);">Size: ${c.size} &nbsp;|&nbsp; ₹${c.price.toLocaleString('en-IN')} × ${c.qty}</small>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="removeFromCart('${c.id}', '${c.size}')">&times;</button>
+        </div>
+      `).join('');
+
+      document.getElementById('cartTotalSummary').innerHTML = `
+        <div class="flex justify-between" style="font-size: 1.15rem; font-weight: 700;">
+          <span>Bag Total:</span>
+          <span style="color: var(--success);">₹${total.toLocaleString('en-IN')}</span>
+        </div>
+      `;
+    }
+
+    function removeFromCart(id, size) {
+      cart = cart.filter(c => !(c.id === id && c.size === size));
+      renderCartUI();
+    }
+
+    function handleFashionCheckout(e) {
+      e.preventDefault();
+      if (cart.length === 0) return;
+
+      const orderNo = 'SH-' + Math.floor(100 + Math.random() * 900);
+      const total = cart.reduce((acc, c) => acc + (c.price * c.qty), 0);
+      const customer = document.getElementById('shName').value.trim();
+      const phone = document.getElementById('shPhone').value.trim();
+      const address = document.getElementById('shAddress').value.trim();
+
+      cart.forEach(c => {
+        const a = apparel.find(x => x.id === c.id);
+        if (a) a.stock = Math.max(0, a.stock - c.qty);
+      });
+
+      orders.unshift({
+        id: orderNo,
+        customer, phone, address,
+        items: [...cart],
+        total,
+        status: 'Order Placed (Packing)'
+      });
+
+      cart = [];
+      saveData();
+      closeModal('cartModal');
+      showToast(`StyleHub Order #${orderNo} confirmed! Fast delivery scheduled.`, 'success');
+    }
+
+    function renderUserOrders() {
+      const tbody = document.getElementById('userFashionOrdersBody');
+      tbody.innerHTML = orders.map(o => `
+        <tr>
+          <td><code>${o.id}</code></td>
+          <td>${o.items.map(i => `${i.name}`).join(', ')}</td>
+          <td><span class="badge badge-info">${o.items.map(i => i.size).join(', ')}</span></td>
+          <td><strong>₹${o.total.toLocaleString('en-IN')}</strong></td>
+          <td><span class="badge ${o.status.includes('Dispatched') ? 'badge-primary' : 'badge-warning'}">${o.status}</span></td>
+          <td><small style="color: var(--success);">14-Day Free Exchange</small></td>
+        </tr>
+      `).join('');
+    }
+
+    function renderAdminApparel() {
+      const tbody = document.getElementById('adminApparelTableBody');
+      tbody.innerHTML = apparel.map(a => `
+        <tr>
+          <td><code>${a.id}</code> <strong>${a.name}</strong></td>
+          <td>${a.dept} &bull; ${a.style}</td>
+          <td>S, M, L, XL</td>
+          <td><input type="number" value="${a.price}" class="form-control" style="width: 90px;" onchange="updateApparel('${a.id}', 'price', this.value)"></td>
+          <td><input type="number" value="${a.stock}" class="form-control" style="width: 70px;" onchange="updateApparel('${a.id}', 'stock', this.value)"></td>
+          <td><button class="btn btn-danger btn-sm" onclick="deleteApparel('${a.id}')">Remove</button></td>
+        </tr>
+      `).join('');
+
+      document.getElementById('admTotalApparel').innerText = apparel.length;
+      document.getElementById('admTotalOrders').innerText = orders.length;
+      const totalRev = orders.reduce((sum, o) => sum + o.total, 0);
+      document.getElementById('admTotalSales').innerText = `₹${totalRev.toLocaleString('en-IN')}`;
+    }
+
+    function updateApparel(id, field, val) {
+      const a = apparel.find(x => x.id === id);
+      if (a) {
+        a[field] = parseInt(val) || 0;
+        saveData();
+      }
+    }
+
+    function deleteApparel(id) {
+      apparel = apparel.filter(x => x.id !== id);
+      saveData();
+      showToast('Apparel removed from store', 'warning');
+    }
+
+    function renderAdminOrders() {
+      const tbody = document.getElementById('adminShopperOrdersBody');
+      tbody.innerHTML = orders.map(o => `
+        <tr>
+          <td><code>${o.id}</code></td>
+          <td><strong>${o.customer}</strong><br><small>${o.phone}</small></td>
+          <td><small>${o.address}</small></td>
+          <td>${o.items.map(i => `${i.name} [Size: ${i.size}]`).join(', ')}</td>
+          <td>₹${o.total.toLocaleString('en-IN')}</td>
+          <td><span class="badge badge-success">${o.status}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function handleCreateOutfit(e) {
+      e.preventDefault();
+      const name = document.getElementById('newFTitle').value.trim();
+      const dept = document.getElementById('newFDept').value;
+      const style = document.getElementById('newFStyle').value;
+      const price = parseInt(document.getElementById('newFPrice').value) || 1500;
+      const stock = parseInt(document.getElementById('newFStock').value) || 10;
+      const emoji = document.getElementById('newFEmoji').value.trim() || '👔';
+      const desc = document.getElementById('newFDesc').value.trim();
+
+      apparel.push({
+        id: 'FAS' + (apparel.length + 1),
+        name, dept, style, price, stock, emoji, desc
+      });
+      saveData();
+      closeModal('addOutfitModal');
+      e.target.reset();
+      showToast(`Outfit "${name}" added to collection!`, 'success');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initRoleSwitcher();
+      renderAll();
+    });
+  </script>
+</body>
+</html>

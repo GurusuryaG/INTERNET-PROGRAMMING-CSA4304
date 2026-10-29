@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exp 15: EasyToll Online Toll Payment System</title>
+  <link rel="stylesheet" href="../../shared/css/app.css">
+  <style>
+    .qr-card {
+      background: #ffffff;
+      color: #0f172a;
+      padding: 1.5rem;
+      border-radius: var(--radius-lg);
+      display: inline-block;
+      text-align: center;
+      box-shadow: var(--shadow-lg);
+    }
+    .qr-box {
+      width: 180px;
+      height: 180px;
+      background: #000;
+      margin: 0 auto 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 0.8rem;
+      position: relative;
+    }
+    .qr-grid-pattern {
+      width: 150px;
+      height: 150px;
+      background: repeating-linear-gradient(45deg, #fff 0, #fff 10px, #000 10px, #000 20px);
+      border: 4px solid #fff;
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="nav-container">
+      <a href="../../index.html" class="brand">
+        🛣️ <span>EasyToll FAST-Lane</span>
+        <span class="brand-badge">Exp 15</span>
+      </a>
+      <div class="role-switcher">
+        <button class="role-btn active" data-role="user">Vehicle Owner</button>
+        <button class="role-btn" data-role="operator">Toll Booth Operator</button>
+        <button class="role-btn" data-role="admin">Highway Admin</button>
+      </div>
+      <a href="../../index.html" class="back-hub-btn">← All Experiments</a>
+    </div>
+  </header>
+
+  <main class="app-container">
+    <!-- USER VIEW -->
+    <div data-role-view="user">
+      <!-- eWallet Balance & Quick Actions -->
+      <div class="stats-grid">
+        <div class="stat-card" style="border-top: 3px solid var(--success);">
+          <span class="stat-label">eWallet Balance</span>
+          <span class="stat-value" id="userWalletDisplay">₹1,500.00</span>
+          <div class="flex gap-1 mt-1">
+            <button class="btn btn-primary btn-sm" onclick="promptAddMoney()">+ Add ₹500</button>
+            <button class="btn btn-secondary btn-sm" onclick="promptAddMoney(1000)">+ Add ₹1000</button>
+          </div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Active Passes</span>
+          <span class="stat-value" id="userActivePassesCount">1</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Vehicle Registered</span>
+          <span class="stat-value">TN 09 BX 4412</span>
+        </div>
+      </div>
+
+      <!-- Quick Actions: Instant eTicket or Monthly Pass -->
+      <div class="form-grid">
+        <!-- Buy Single Trip eTicket -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🎟️ Buy Instant Single-Trip Toll eTicket</div>
+          </div>
+          <form onsubmit="handleBuyTicket(event)">
+            <div class="form-group">
+              <label class="form-label">Select Toll Plaza</label>
+              <select id="ticketPlazaSelect" class="form-select" onchange="updateTicketFee()"></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Vehicle Registration Number</label>
+              <input type="text" id="ticketVehNo" class="form-control" value="TN 09 BX 4412" required>
+            </div>
+            <div class="flex justify-between items-center mb-1">
+              <span>Toll Fee:</span>
+              <strong id="ticketFeeDisplay" style="color: var(--accent-primary); font-size: 1.25rem;">₹85</strong>
+            </div>
+            <button type="submit" class="btn btn-success" style="width: 100%;">Deduct from Wallet & Generate eTicket</button>
+          </form>
+        </div>
+
+        <!-- Apply for Monthly Toll Pass -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🪪 Apply for Monthly Highway Toll Pass</div>
+          </div>
+          <form onsubmit="handleApplyPass(event)">
+            <div class="form-group">
+              <label class="form-label">Plaza / Highway Route</label>
+              <select id="passPlazaSelect" class="form-select"></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Vehicle Type</label>
+              <select id="passVehType" class="form-select">
+                <option value="Car / Jeep / Van">Car / Jeep / Van (Light Vehicle)</option>
+                <option value="Mini-Bus / LCV">Mini-Bus / Commercial LCV</option>
+                <option value="Truck / Multi-Axle">Truck / 3-Axle Bus</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Pass Duration</label>
+              <select id="passDuration" class="form-select">
+                <option value="1 Month">1 Month Unlimited Trips (₹1,050)</option>
+                <option value="3 Months">3 Months Saver (₹2,900)</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Apply & Submit for Verification</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- My Active Digital Passes & QR Code View -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📱 My Issued Toll Passes & Fast-Tag QR Codes</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Pass ID / Ref</th>
+                <th>Type</th>
+                <th>Vehicle No</th>
+                <th>Plaza Route</th>
+                <th>Validity Period</th>
+                <th>Status</th>
+                <th>Digital Pass</th>
+              </tr>
+            </thead>
+            <tbody id="userPassesTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOLL GATE USER (BOOTH OPERATOR) VIEW -->
+    <div data-role-view="operator" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📷 Toll Plaza Scanner & Barrier Verification</div>
+          <span class="badge badge-success">Booth #04 (FastTag & QR Reader)</span>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Enter or Scan QR Pass ID / eTicket Ref</label>
+            <input type="text" id="scanInput" class="form-control" placeholder="e.g. PASS-8821 or TKT-502" required>
+          </div>
+          <div class="form-group" style="align-self: flex-end;">
+            <button class="btn btn-primary" onclick="verifyScannedCode()">Verify & Open Boom Barrier</button>
+          </div>
+        </div>
+
+        <div id="scanResultBox" style="margin-top: 1.5rem; display: none;"></div>
+      </div>
+    </div>
+
+    <!-- ADMIN VIEW -->
+    <div data-role-view="admin" style="display: none;">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Active Toll Plazas</span>
+          <span class="stat-value" id="admPlazaCount">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Pending Passes</span>
+          <span class="stat-value" id="admPendingPasses">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Toll Collections</span>
+          <span class="stat-value" id="admTollCollections">₹0</span>
+        </div>
+      </div>
+
+      <!-- Manage Toll Passes (Approve & Generate QR) -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🛡️ Manage Toll Passes & Admin Approvals</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Pass ID</th>
+                <th>Vehicle No</th>
+                <th>Plaza</th>
+                <th>Vehicle Type</th>
+                <th>Duration</th>
+                <th>Status</th>
+                <th>Admin Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminPassesTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Manage Toll Plaza Details -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🛣️ Highway Toll Plazas & Tariff Rates</div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('addPlazaModal')">+ Add Toll Plaza</button>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Plaza Code</th>
+                <th>Plaza Name / Highway</th>
+                <th>Location / KM</th>
+                <th>Car Fee (₹)</th>
+                <th>Heavy Vehicle (₹)</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminPlazasTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Digital QR Code Display Modal -->
+  <div id="qrModal" class="modal-overlay">
+    <div class="modal" style="max-width: 450px; text-align: center;">
+      <div class="modal-header">
+        <h3 class="card-title">Digital FAST-Lane Toll Pass</h3>
+        <button class="modal-close" onclick="closeModal('qrModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="qr-card">
+          <h3 id="qrModalPassTitle" style="color: #0f172a; margin-bottom: 0.5rem;">EASYTOLL PASS</h3>
+          <div class="qr-box">
+            <div class="qr-grid-pattern"></div>
+          </div>
+          <div style="font-family: monospace; font-size: 1.1rem; font-weight: 700;" id="qrCodeString">PASS-8821</div>
+          <div style="font-size: 0.85rem; color: #475569; margin-top: 0.5rem;" id="qrVehString">Vehicle: TN 09 BX 4412</div>
+          <div style="font-size: 0.8rem; color: #16a34a; font-weight: 600; margin-top: 0.25rem;">VALID & ACTIVE FOR AUTOMATIC GATE SCAN</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('qrModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Toll Plaza Modal -->
+  <div id="addPlazaModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="card-title">Configure New Toll Plaza</h3>
+        <button class="modal-close" onclick="closeModal('addPlazaModal')">&times;</button>
+      </div>
+      <form onsubmit="handleCreatePlaza(event)">
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Plaza Code</label>
+              <input type="text" id="newPzCode" class="form-control" placeholder="PZ-08" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Plaza Name</label>
+              <input type="text" id="newPzName" class="form-control" placeholder="Paranur Toll Plaza, NH-45" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Location</label>
+              <input type="text" id="newPzLoc" class="form-control" placeholder="Chengalpattu KM 52" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Car Single Fee (₹)</label>
+              <input type="number" id="newPzCarFee" class="form-control" value="85" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Commercial Heavy Fee (₹)</label>
+              <input type="number" id="newPzHeavyFee" class="form-control" value="230" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('addPlazaModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Plaza</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../../shared/js/utils.js"></script>
+  <script>
+    const DEFAULT_PLAZAS = [
+      { id: 'PZ1', code: 'PZ-01', name: 'Paranur Toll Plaza (NH-45 GST Road)', loc: 'Chengalpattu, KM 52', carFee: 85, heavyFee: 240 },
+      { id: 'PZ2', code: 'PZ-02', name: 'Sriperumbudur Toll Plaza (NH-4)', loc: 'Kanchipuram, KM 37', carFee: 90, heavyFee: 260 },
+      { id: 'PZ3', code: 'PZ-03', name: 'Attibele Border Toll Plaza (NH-44)', loc: 'Bangalore-Hosur, KM 32', carFee: 110, heavyFee: 310 }
+    ];
+
+    const DEFAULT_PASSES = [
+      { id: 'PASS-8821', type: 'Monthly Route Pass', vehNo: 'TN 09 BX 4412', plaza: 'Paranur Toll Plaza (NH-45 GST Road)', vehType: 'Car / Jeep / Van', duration: '1 Month', validTill: '2026-04-20', status: 'Approved & Active' },
+      { id: 'TKT-502', type: 'Single Trip eTicket', vehNo: 'TN 09 BX 4412', plaza: 'Sriperumbudur Toll Plaza (NH-4)', vehType: 'Car / Jeep / Van', duration: 'Single Trip', validTill: '2026-03-24', status: 'Approved & Active' }
+    ];
+
+    let plazas = getStore('ip_lab_exp15_plazas', DEFAULT_PLAZAS);
+    let passes = getStore('ip_lab_exp15_passes', DEFAULT_PASSES);
+    let wallet = getStore('ip_lab_exp15_wallet', 1500);
+
+    function saveData() {
+      setStore('ip_lab_exp15_plazas', plazas);
+      setStore('ip_lab_exp15_passes', passes);
+      setStore('ip_lab_exp15_wallet', wallet);
+      renderAll();
+    }
+
+    function renderAll() {
+      document.getElementById('userWalletDisplay').innerText = `₹${wallet.toLocaleString('en-IN')}.00`;
+      populatePlazaDropdowns();
+      renderUserPasses();
+      renderAdminPasses();
+      renderAdminPlazas();
+    }
+
+    function promptAddMoney(amount = 500) {
+      wallet += amount;
+      saveData();
+      showToast(`Added ₹${amount} to EasyToll eWallet! New Balance: ₹${wallet}`, 'success');
+    }
+
+    function populatePlazaDropdowns() {
+      const tSel = document.getElementById('ticketPlazaSelect');
+      const pSel = document.getElementById('passPlazaSelect');
+      const opts = plazas.map(p => `<option value="${p.id}">${p.name} - ₹${p.carFee}</option>`).join('');
+      tSel.innerHTML = opts;
+      pSel.innerHTML = plazas.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+      updateTicketFee();
+    }
+
+    function updateTicketFee() {
+      const pId = document.getElementById('ticketPlazaSelect').value;
+      const p = plazas.find(x => x.id === pId);
+      if (p) {
+        document.getElementById('ticketFeeDisplay').innerText = `₹${p.carFee}`;
+      }
+    }
+
+    function handleBuyTicket(e) {
+      e.preventDefault();
+      const pId = document.getElementById('ticketPlazaSelect').value;
+      const p = plazas.find(x => x.id === pId);
+      if (!p) return;
+
+      if (wallet < p.carFee) {
+        showToast('Insufficient wallet balance! Please add funds.', 'danger');
+        return;
+      }
+
+      wallet -= p.carFee;
+      const tktId = 'TKT-' + Math.floor(100 + Math.random() * 900);
+      const vehNo = document.getElementById('ticketVehNo').value.trim();
+
+      passes.unshift({
+        id: tktId,
+        type: 'Single Trip eTicket',
+        vehNo,
+        plaza: p.name,
+        vehType: 'Car / Jeep / Van',
+        duration: 'Single Trip',
+        validTill: '2026-03-24',
+        status: 'Approved & Active'
+      });
+
+      saveData();
+      showToast(`eTicket ${tktId} generated! ₹${p.carFee} deducted from wallet.`, 'success');
+      showPassQR(tktId);
+    }
+
+    function handleApplyPass(e) {
+      e.preventDefault();
+      const passId = 'PASS-' + Math.floor(1000 + Math.random() * 9000);
+      const plaza = document.getElementById('passPlazaSelect').value;
+      const vehType = document.getElementById('passVehType').value;
+      const duration = document.getElementById('passDuration').value;
+
+      passes.unshift({
+        id: passId,
+        type: 'Monthly Route Pass',
+        vehNo: 'TN 09 BX 4412',
+        plaza,
+        vehType,
+        duration,
+        validTill: '2026-04-22',
+        status: 'Pending Admin Approval'
+      });
+
+      saveData();
+      showToast(`Monthly Toll Pass applied! Pending Highway Admin verification.`, 'info');
+    }
+
+    function renderUserPasses() {
+      const tbody = document.getElementById('userPassesTableBody');
+      const active = passes.filter(p => p.status.includes('Approved'));
+      document.getElementById('userActivePassesCount').innerText = active.length;
+
+      tbody.innerHTML = passes.map(p => `
+        <tr>
+          <td><code>${p.id}</code></td>
+          <td><strong>${p.type}</strong></td>
+          <td>${p.vehNo}</td>
+          <td>${p.plaza}</td>
+          <td>${p.validTill}</td>
+          <td><span class="badge ${p.status.includes('Approved') ? 'badge-success' : 'badge-warning'}">${p.status}</span></td>
+          <td>
+            ${p.status.includes('Approved') ? `<button class="btn btn-primary btn-sm" onclick="showPassQR('${p.id}')">📲 View QR Pass</button>` : `<small style="color:var(--text-secondary);">Awaiting Approval</small>`}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function showPassQR(id) {
+      const p = passes.find(x => x.id === id);
+      if (!p) return;
+      document.getElementById('qrModalPassTitle').innerText = `${p.type.toUpperCase()}`;
+      document.getElementById('qrCodeString').innerText = p.id;
+      document.getElementById('qrVehString').innerText = `Vehicle: ${p.vehNo} | Plaza: ${p.plaza}`;
+      openModal('qrModal');
+    }
+
+    // Toll Booth Operator Verification
+    function verifyScannedCode() {
+      const code = document.getElementById('scanInput').value.trim();
+      const res = document.getElementById('scanResultBox');
+      res.style.display = 'block';
+
+      const match = passes.find(p => p.id === code || p.vehNo.toLowerCase() === code.toLowerCase());
+      if (match && match.status.includes('Approved')) {
+        res.innerHTML = `
+          <div style="background: rgba(16, 185, 129, 0.2); border: 2px solid var(--success); border-radius: var(--radius-md); padding: 1.5rem; text-align: center;">
+            <h2 style="color: var(--success); margin-bottom: 0.5rem;">✅ TOLL CLEARANCE VERIFIED</h2>
+            <div style="font-size: 1.15rem; font-weight: 700;">PASS ID: ${match.id} &bull; Vehicle: ${match.vehNo}</div>
+            <p style="color: var(--text-secondary); margin: 0.5rem 0;">Authorized Plaza: ${match.plaza} (${match.type})</p>
+            <div style="color: #fff; font-weight: 700; background: var(--success); display: inline-block; padding: 0.4rem 1.2rem; border-radius: 999px;">
+              BOOM BARRIER OPENED &bull; CLEAR TO PROCEED
+            </div>
+          </div>
+        `;
+        showToast(`Verification success for ${match.vehNo}! Barrier opened.`, 'success');
+      } else {
+        res.innerHTML = `
+          <div style="background: rgba(239, 68, 68, 0.2); border: 2px solid var(--danger); border-radius: var(--radius-md); padding: 1.5rem; text-align: center;">
+            <h2 style="color: var(--danger); margin-bottom: 0.5rem;">❌ INVALID OR UNAPPROVED PASS</h2>
+            <p style="color: var(--text-secondary);">No active toll authorization found for "${code}". Collect manual cash fee.</p>
+          </div>
+        `;
+        showToast('Toll pass verification failed!', 'danger');
+      }
+    }
+
+    function renderAdminPasses() {
+      const tbody = document.getElementById('adminPassesTableBody');
+      tbody.innerHTML = passes.map(p => `
+        <tr>
+          <td><code>${p.id}</code></td>
+          <td><strong>${p.vehNo}</strong></td>
+          <td>${p.plaza}</td>
+          <td>${p.vehType}</td>
+          <td>${p.duration}</td>
+          <td><span class="badge ${p.status.includes('Approved') ? 'badge-success' : 'badge-warning'}">${p.status}</span></td>
+          <td>
+            ${!p.status.includes('Approved') ? `<button class="btn btn-success btn-sm" onclick="approveTollPass('${p.id}')">Approve & Generate QR</button>` : `<button class="btn btn-secondary btn-sm" onclick="showPassQR('${p.id}')">View QR</button>`}
+          </td>
+        </tr>
+      `).join('');
+
+      document.getElementById('admPlazaCount').innerText = plazas.length;
+      document.getElementById('admPendingPasses').innerText = passes.filter(p => !p.status.includes('Approved')).length;
+      document.getElementById('admTollCollections').innerText = `₹${passes.length * 120 + 2500}`;
+    }
+
+    function approveTollPass(id) {
+      const p = passes.find(x => x.id === id);
+      if (p) {
+        p.status = 'Approved & Active';
+        saveData();
+        showToast(`Pass ${id} approved and digital FAST-Lane QR generated!`, 'success');
+      }
+    }
+
+    function renderAdminPlazas() {
+      const tbody = document.getElementById('adminPlazasTableBody');
+      tbody.innerHTML = plazas.map(p => `
+        <tr>
+          <td><code>${p.code}</code></td>
+          <td><strong>${p.name}</strong></td>
+          <td>${p.loc}</td>
+          <td>₹${p.carFee}</td>
+          <td>₹${p.heavyFee}</td>
+          <td><button class="btn btn-danger btn-sm" onclick="deletePlaza('${p.id}')">Delete</button></td>
+        </tr>
+      `).join('');
+    }
+
+    function deletePlaza(id) {
+      plazas = plazas.filter(x => x.id !== id);
+      saveData();
+      showToast('Plaza deleted from database', 'warning');
+    }
+
+    function handleCreatePlaza(e) {
+      e.preventDefault();
+      const code = document.getElementById('newPzCode').value.trim();
+      const name = document.getElementById('newPzName').value.trim();
+      const loc = document.getElementById('newPzLoc').value.trim();
+      const carFee = parseInt(document.getElementById('newPzCarFee').value) || 80;
+      const heavyFee = parseInt(document.getElementById('newPzHeavyFee').value) || 200;
+
+      plazas.push({
+        id: 'PZ' + (plazas.length + 1),
+        code, name, loc, carFee, heavyFee
+      });
+      saveData();
+      closeModal('addPlazaModal');
+      e.target.reset();
+      showToast(`Toll Plaza "${name}" registered!`, 'success');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initRoleSwitcher();
+      renderAll();
+    });
+  </script>
+</body>
+</html>

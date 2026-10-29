@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exp 19: Tele-Veterinary Healthcare Consultation</title>
+  <link rel="stylesheet" href="../../shared/css/app.css">
+  <style>
+    .media-preview-box {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px dashed var(--accent-primary);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      text-align: center;
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="nav-container">
+      <a href="../../index.html" class="brand">
+        🐄 <span>VetCare Animal Tele-Clinic</span>
+        <span class="brand-badge">Exp 19</span>
+      </a>
+      <div class="role-switcher">
+        <button class="role-btn active" data-role="farmer">Farmer / Livestock Owner</button>
+        <button class="role-btn" data-role="doctor">Veterinary Doctor</button>
+      </div>
+      <a href="../../index.html" class="back-hub-btn">← All Experiments</a>
+    </div>
+  </header>
+
+  <main class="app-container">
+    <!-- FARMER VIEW -->
+    <div data-role-view="farmer">
+      <!-- Post Symptoms (Text, Photo, Audio, Video Simulation) -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🩺 Report Animal Illness Signs & Symptoms</div>
+        </div>
+        <form onsubmit="handlePostVetConsult(event)" class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Livestock / Animal Type</label>
+            <select id="vetAnimalType" class="form-select">
+              <option value="Dairy Cow (Jersey / HF Cross)">Dairy Cow (Jersey / HF Cross)</option>
+              <option value="Murrah Buffalo">Murrah Buffalo</option>
+              <option value="Goat / Sheep (Boer)">Goat / Sheep (Boer)</option>
+              <option value="Poultry / Broiler">Poultry / Broiler</option>
+              <option value="Companion Dog / Pet">Companion Dog / Pet</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Consultation Category</label>
+            <select id="vetClinicType" class="form-select" onchange="updateVetFeeDisplay()">
+              <option value="Govt CVH (Free)">Govt. Civil Veterinary Hospital (CVH) - Free Subscription</option>
+              <option value="Private Specialist (Paid)">Private Specialist Vet Clinic - ₹350 Consultation Fee</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Payment Gateway (For Private Doctor)</label>
+            <select id="vetPaymentGateway" class="form-select">
+              <option value="Direct Bank Transfer">Direct Bank Transfer (NEFT/IMPS)</option>
+              <option value="EasyPaisa Wallet">EasyPaisa Digital Wallet</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Attach Media (Images, Audio, Video)</label>
+            <input type="text" id="vetMediaAttachment" class="form-control" value="cow_mouth_lesion_video.mp4, sound_cough.wav" required>
+          </div>
+          <div class="form-group" style="grid-column: span 2;">
+            <label class="form-label">Observed Signs, Symptoms & Body Temperature</label>
+            <textarea id="vetSymptomsText" class="form-control" rows="2" placeholder="High fever (104 F), sudden drop in milk yield, nasal discharge..." required></textarea>
+          </div>
+          <div class="form-group" style="align-self: flex-end;">
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Consultation Request</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Farmer Consultations & Doctor Prescriptions -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📜 My Animal Tele-Consultations & Digital Prescriptions</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Case Ref</th>
+                <th>Animal</th>
+                <th>Hospital / Clinic</th>
+                <th>Attached Media</th>
+                <th>Doctor Assigned</th>
+                <th>Doctor Prescription & Cure</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="farmerCasesTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Regional Disease Analytics Chart -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📊 Regional Livestock Disease Heatmap & Vulnerability Analytics</div>
+          <span class="badge badge-warning">AI Epidemiological Model</span>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-label">Southern Plains (Tamil Nadu / Karnataka)</span>
+            <strong style="color: var(--danger);">Foot & Mouth Disease (FMD) - 48% Cases</strong>
+            <small style="color: var(--text-secondary); margin-top: 0.3rem;">Mandatory bi-annual ring vaccination active.</small>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Delta Wetlands (Thanjavur / Cauvery Basin)</span>
+            <strong style="color: var(--warning);">Haemorrhagic Septicaemia (HS) - 34% Cases</strong>
+            <small style="color: var(--text-secondary); margin-top: 0.3rem;">Linked to monsoon humidity and stagnant pastures.</small>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Hill Tracts & Western Ghats</span>
+            <strong style="color: var(--info);">Tick-borne Theileriosis - 22% Cases</strong>
+            <small style="color: var(--text-secondary); margin-top: 0.3rem;">Acaricide dipping baths recommended for dairy herds.</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VETERINARY DOCTOR VIEW -->
+    <div data-role-view="doctor" style="display: none;">
+      <!-- Doctor Payment Profile (Bank & EasyPaisa) -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">💳 Doctor Receiving Gateways (Bank Transfer & EasyPaisa)</div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Doctor Bank Name & A/C</label>
+            <input type="text" id="docBank" class="form-control" value="State Bank of India - A/C 38291048201 (IFSC: SBIN0001048)">
+          </div>
+          <div class="form-group">
+            <label class="form-label">EasyPaisa Account ID / Mobile</label>
+            <input type="text" id="docEasyPaisa" class="form-control" value="EasyPaisa Wallet: +91 98408 11223">
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="showToast('Payment receiving profile updated!', 'success')">Save Payment Details</button>
+      </div>
+
+      <!-- Pending Animal Consultation Requests -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🩺 Farmer Medical Requests: Review Symptoms & Issue Rx</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Case ID</th>
+                <th>Animal</th>
+                <th>Farmer Description & Signs</th>
+                <th>Attached Media</th>
+                <th>Payment Mode</th>
+                <th>Diagnosis & Prescription</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="doctorCasesTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Issue Prescription Modal for Doctor -->
+  <div id="rxModal" class="modal-overlay">
+    <div class="modal" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 class="card-title" id="rxModalTitle">Prescribe Veterinary Treatment</h3>
+        <button class="modal-close" onclick="closeModal('rxModal')">&times;</button>
+      </div>
+      <form onsubmit="handleSaveRx(event)">
+        <div class="modal-body">
+          <input type="hidden" id="rxCaseId">
+          <div class="form-group">
+            <label class="form-label">Clinical Diagnosis</label>
+            <input type="text" id="rxDiagnosis" class="form-control" value="Acute Bovine Mastitis (Bacterial)" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Medications & Dosage (Tablets / Injections / Ointment)</label>
+            <textarea id="rxMedicines" class="form-control" rows="3" placeholder="Inj. Ceftiofur Sodium 1g IM for 3 days; Flunixin Meglumine 15ml; Teat disinfectant dip..." required></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Dietary & Isolation Advice</label>
+            <input type="text" id="rxAdvice" class="form-control" value="Isolate from healthy milking cows; feed green fodder and mineral mixture." required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('rxModal')">Cancel</button>
+          <button type="submit" class="btn btn-success">Issue Digital Prescription</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../../shared/js/utils.js"></script>
+  <script>
+    const DEFAULT_CASES = [
+      {
+        id: 'VET-801',
+        animal: 'Dairy Cow (Jersey / HF Cross)',
+        clinic: 'Govt CVH (Free)',
+        payment: 'Govt Free Subsidized',
+        media: '🎥 cow_fever_swelling.mp4, 📷 udder_lesion.jpg',
+        symptoms: 'Swelling on right quarter of udder, pain on touch, fever 103.5 F, reduced feeding.',
+        farmer: 'Farmer Murugesan',
+        doctor: 'Dr. K. Swaminathan BVSc',
+        diagnosis: 'Bovine Mastitis (Clinical Grade 2)',
+        prescription: 'Inj. Enrofloxacin 20ml IM daily for 3 days; Meloxicam 15ml; Twice daily warm water teat dip.',
+        status: 'Prescribed & Active'
+      },
+      {
+        id: 'VET-802',
+        animal: 'Murrah Buffalo',
+        clinic: 'Private Specialist (Paid)',
+        payment: 'EasyPaisa Wallet (₹350 Verified)',
+        media: '📷 buffalo_hoof_cut.jpg',
+        symptoms: 'Severe limping on rear left hoof, foul smelling discharge between claws.',
+        farmer: 'Farmer Rajendran',
+        doctor: 'Dr. K. Swaminathan BVSc',
+        diagnosis: 'Foot Rot (Interdigital Necrobacillosis)',
+        prescription: 'Clean with 5% copper sulphate wash; Inj. Oxytetracycline LA 25ml deep IM.',
+        status: 'Prescribed & Active'
+      }
+    ];
+
+    let cases = getStore('ip_lab_exp19_cases', DEFAULT_CASES);
+
+    function saveData() {
+      setStore('ip_lab_exp19_cases', cases);
+      renderAll();
+    }
+
+    function renderAll() {
+      renderFarmerCases();
+      renderDoctorCases();
+    }
+
+    function updateVetFeeDisplay() {
+      const type = document.getElementById('vetClinicType').value;
+      if (type.includes('Free')) {
+        showToast('Govt. CVH selected: Free consultation covered under Animal Welfare Dept.', 'info');
+      } else {
+        showToast('Private Clinic: ₹350 payable via Bank Transfer or EasyPaisa.', 'warning');
+      }
+    }
+
+    function handlePostVetConsult(e) {
+      e.preventDefault();
+      const animal = document.getElementById('vetAnimalType').value;
+      const clinic = document.getElementById('vetClinicType').value;
+      const gateway = document.getElementById('vetPaymentGateway').value;
+      const media = document.getElementById('vetMediaAttachment').value;
+      const symptoms = document.getElementById('vetSymptomsText').value.trim();
+      const newId = 'VET-' + Math.floor(100 + Math.random() * 900);
+
+      const payStr = clinic.includes('Free') ? 'Govt Free Subsidized' : `${gateway} (₹350 Paid)`;
+
+      cases.unshift({
+        id: newId,
+        animal,
+        clinic,
+        payment: payStr,
+        media: '📁 ' + media,
+        symptoms,
+        farmer: 'Farmer Gurusamy',
+        doctor: 'Dr. K. Swaminathan BVSc',
+        diagnosis: 'Pending Doctor Diagnosis',
+        prescription: 'Under review by veterinary specialist.',
+        status: 'Awaiting Prescription'
+      });
+
+      saveData();
+      e.target.reset();
+      showToast(`Case ${newId} submitted! Specialist assigned for tele-diagnosis.`, 'success');
+    }
+
+    function renderFarmerCases() {
+      const tbody = document.getElementById('farmerCasesTableBody');
+      tbody.innerHTML = cases.map(c => `
+        <tr>
+          <td><code>${c.id}</code></td>
+          <td><strong>${c.animal}</strong></td>
+          <td><span class="badge ${c.clinic.includes('Free') ? 'badge-success' : 'badge-primary'}">${c.clinic}</span></td>
+          <td><small>${c.media}</small></td>
+          <td>${c.doctor}</td>
+          <td>
+            <strong>${c.diagnosis}</strong><br>
+            <small style="color: var(--accent-primary);">${c.prescription}</small>
+          </td>
+          <td><span class="badge ${c.status.includes('Prescribed') ? 'badge-success' : 'badge-warning'}">${c.status}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function renderDoctorCases() {
+      const tbody = document.getElementById('doctorCasesTableBody');
+      tbody.innerHTML = cases.map(c => `
+        <tr>
+          <td><code>${c.id}</code></td>
+          <td><strong>${c.animal}</strong><br><small>By: ${c.farmer}</small></td>
+          <td><small>${c.symptoms}</small></td>
+          <td><small>${c.media}</small></td>
+          <td><span class="badge badge-info">${c.payment}</span></td>
+          <td>
+            <strong>${c.diagnosis}</strong><br>
+            <small>${c.prescription}</small>
+          </td>
+          <td>
+            <button class="btn btn-primary btn-sm" onclick="openRxModal('${c.id}')">Write Prescription</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openRxModal(id) {
+      const c = cases.find(x => x.id === id);
+      if (!c) return;
+      document.getElementById('rxCaseId').value = c.id;
+      document.getElementById('rxModalTitle').innerText = `Prescribe for ${c.animal} (${c.id})`;
+      openModal('rxModal');
+    }
+
+    function handleSaveRx(e) {
+      e.preventDefault();
+      const id = document.getElementById('rxCaseId').value;
+      const c = cases.find(x => x.id === id);
+      if (!c) return;
+
+      c.diagnosis = document.getElementById('rxDiagnosis').value.trim();
+      c.prescription = document.getElementById('rxMedicines').value.trim() + ' | ' + document.getElementById('rxAdvice').value.trim();
+      c.status = 'Prescribed & Active';
+
+      saveData();
+      closeModal('rxModal');
+      showToast(`Digital prescription dispatched to ${c.farmer}!`, 'success');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initRoleSwitcher();
+      renderAll();
+    });
+  </script>
+</body>
+</html>

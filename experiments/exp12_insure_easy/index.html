@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exp 12: InsureEasy Insurance Platform</title>
+  <link rel="stylesheet" href="../../shared/css/app.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="nav-container">
+      <a href="../../index.html" class="brand">
+        🛡️ <span>InsureEasy Portal</span>
+        <span class="brand-badge">Exp 12</span>
+      </a>
+      <div class="role-switcher">
+        <button class="role-btn active" data-role="user">Policyholder / User</button>
+        <button class="role-btn" data-role="agent">Insurance Agent</button>
+        <button class="role-btn" data-role="admin">Insurance Admin</button>
+      </div>
+      <a href="../../index.html" class="back-hub-btn">← All Experiments</a>
+    </div>
+  </header>
+
+  <main class="app-container">
+    <!-- USER VIEW -->
+    <div data-role-view="user">
+      <!-- Policy Comparison Cards -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🔍 Compare & Apply for Protection Plans</div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card" style="border-top: 3px solid var(--accent-primary);">
+            <div class="flex justify-between items-center">
+              <strong>Health Shield 360</strong>
+              <span class="badge badge-success">Top Pick</span>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0.5rem 0;">₹10 Lakhs cashless hospitalization at 7000+ network hospitals. Zero copay.</p>
+            <div style="font-size: 1.3rem; font-weight: 700; color: var(--accent-primary);">₹650 <small style="font-size: 0.8rem; color: var(--text-secondary);">/ month</small></div>
+            <button class="btn btn-primary btn-sm mt-1" onclick="buyPolicy('Health Shield 360', 7800, 'Health')">Apply Online</button>
+          </div>
+
+          <div class="stat-card" style="border-top: 3px solid var(--info);">
+            <div class="flex justify-between items-center">
+              <strong>DriveSafe Comprehensive Auto</strong>
+              <span class="badge badge-info">Zero Dep</span>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0.5rem 0;">Bumper-to-bumper car cover with 24x7 roadside assist & key replacement.</p>
+            <div style="font-size: 1.3rem; font-weight: 700; color: var(--accent-primary);">₹420 <small style="font-size: 0.8rem; color: var(--text-secondary);">/ month</small></div>
+            <button class="btn btn-primary btn-sm mt-1" onclick="buyPolicy('DriveSafe Comprehensive Auto', 5040, 'Vehicle')">Apply Online</button>
+          </div>
+
+          <div class="stat-card" style="border-top: 3px solid var(--warning);">
+            <div class="flex justify-between items-center">
+              <strong>HomeSafe Structure & Contents</strong>
+              <span class="badge badge-warning">Fire & Theft</span>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0.5rem 0;">Up to ₹50 Lakhs protection for apartment structure, electronics and jewelry.</p>
+            <div style="font-size: 1.3rem; font-weight: 700; color: var(--accent-primary);">₹310 <small style="font-size: 0.8rem; color: var(--text-secondary);">/ month</small></div>
+            <button class="btn btn-primary btn-sm mt-1" onclick="buyPolicy('HomeSafe Structure & Contents', 3720, 'Property')">Apply Online</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- My Active Policies -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📜 My Active Insurance Policies</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Policy No</th>
+                <th>Plan Name</th>
+                <th>Category</th>
+                <th>Annual Premium</th>
+                <th>Next Due Date</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="userPoliciesTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- File Claim & SMS Alert Inbox -->
+      <div class="form-grid">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🚨 Instant Cashless Claim Filing</div>
+          </div>
+          <form onsubmit="handleFileClaim(event)">
+            <div class="form-group">
+              <label class="form-label">Select Policy</label>
+              <select id="claimPolicySelect" class="form-select"></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Claim Amount (₹)</label>
+              <input type="number" id="claimAmount" class="form-control" value="25000" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Reason / Incident Description</label>
+              <input type="text" id="claimReason" class="form-control" placeholder="Hospital admission due to acute viral infection..." required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Claim Request</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📲 SMS Alerts & Renewal Notices</div>
+          </div>
+          <div id="smsInboxContainer" style="display: flex; flex-direction: column; gap: 0.75rem;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INSURANCE AGENT VIEW -->
+    <div data-role-view="agent" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🧑‍💼 Agent Portfolio: Manage Customers & Policies</div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('addCustomerModal')">+ Register New Customer</button>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Policy No</th>
+                <th>Customer Name</th>
+                <th>Plan</th>
+                <th>Due Date</th>
+                <th>Premium</th>
+                <th>Send SMS Reminder</th>
+              </tr>
+            </thead>
+            <tbody id="agentCustomersTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN VIEW -->
+    <div data-role-view="admin" style="display: none;">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Active Agents</span>
+          <span class="stat-value" id="admMgrAgentCount">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Total Policyholders</span>
+          <span class="stat-value" id="admMgrPolicyCount">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Gross Premiums Collected</span>
+          <span class="stat-value" id="admMgrPremiumSum">₹0</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🛡️ Insurance Agent Approval & License Roster</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Agent ID</th>
+                <th>Agent Name</th>
+                <th>Branch</th>
+                <th>IRDAI License</th>
+                <th>Approval Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="adminAgentsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Add Customer Modal for Agent -->
+  <div id="addCustomerModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="card-title">Enroll New Customer Policy</h3>
+        <button class="modal-close" onclick="closeModal('addCustomerModal')">&times;</button>
+      </div>
+      <form onsubmit="handleAgentAddCustomer(event)">
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Customer Name</label>
+              <input type="text" id="agCustName" class="form-control" placeholder="Prakash Raman" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Mobile Number</label>
+              <input type="tel" id="agCustPhone" class="form-control" placeholder="9840112233" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Policy Plan</label>
+              <select id="agCustPlan" class="form-select">
+                <option value="Health Shield 360">Health Shield 360 (₹7,800/yr)</option>
+                <option value="DriveSafe Auto">DriveSafe Auto (₹5,040/yr)</option>
+                <option value="HomeSafe Property">HomeSafe Property (₹3,720/yr)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Premium Due Date</label>
+              <input type="date" id="agCustDueDate" class="form-control" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('addCustomerModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Enroll Policy</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../../shared/js/utils.js"></script>
+  <script>
+    const DEFAULT_AGENTS = [
+      { id: 'AG101', name: 'Ravi Chandran', branch: 'Chennai Central', license: 'IRDA/IND/2021/88', status: 'Approved' },
+      { id: 'AG102', name: 'Kavitha N', branch: 'Bangalore South', license: 'IRDA/IND/2023/14', status: 'Approved' },
+      { id: 'AG103', name: 'Siddharth Rao', branch: 'Coimbatore', license: 'IRDA/IND/2024/99', status: 'Pending Approval' }
+    ];
+
+    const DEFAULT_POLICIES = [
+      { id: 'POL-7821', holder: 'Gurusamy (User)', phone: '9840112233', plan: 'Health Shield 360', cat: 'Health', premium: 7800, dueDate: '2026-04-15', status: 'Active' },
+      { id: 'POL-9014', holder: 'Gurusamy (User)', phone: '9840112233', plan: 'DriveSafe Comprehensive Auto', cat: 'Vehicle', premium: 5040, dueDate: '2026-05-10', status: 'Active' }
+    ];
+
+    const DEFAULT_ALERTS = [
+      { id: 1, text: 'Alert: Your Health Shield 360 premium of ₹7,800 is due on 15 Apr 2026. Pay early to ensure uninterrupted cashless coverage.', date: '2026-03-20' },
+      { id: 2, text: 'Notice: Cashless claim reimbursement for ₹12,400 approved and credited.', date: '2026-03-10' }
+    ];
+
+    let agents = getStore('ip_lab_exp12_agents', DEFAULT_AGENTS);
+    let policies = getStore('ip_lab_exp12_policies', DEFAULT_POLICIES);
+    let alerts = getStore('ip_lab_exp12_alerts', DEFAULT_ALERTS);
+
+    function saveData() {
+      setStore('ip_lab_exp12_agents', agents);
+      setStore('ip_lab_exp12_policies', policies);
+      setStore('ip_lab_exp12_alerts', alerts);
+      renderAll();
+    }
+
+    function renderAll() {
+      renderUserPolicies();
+      renderAlerts();
+      renderAgentCustomers();
+      renderAdminAgents();
+      populateClaimSelect();
+    }
+
+    function renderUserPolicies() {
+      const tbody = document.getElementById('userPoliciesTableBody');
+      tbody.innerHTML = policies.map(p => `
+        <tr>
+          <td><code>${p.id}</code></td>
+          <td><strong>${p.plan}</strong></td>
+          <td><span class="badge badge-info">${p.cat}</span></td>
+          <td>₹${p.premium.toLocaleString('en-IN')}</td>
+          <td>${formatDate(p.dueDate)}</td>
+          <td><span class="badge badge-success">${p.status}</span></td>
+          <td>
+            <button class="btn btn-primary btn-sm" onclick="payPremium('${p.id}')">Pay Premium</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function payPremium(id) {
+      showToast(`Premium paid successfully for Policy ${id}! 1-Year renewal active.`, 'success');
+    }
+
+    function buyPolicy(plan, premium, cat) {
+      const newId = 'POL-' + Math.floor(1000 + Math.random() * 9000);
+      policies.unshift({
+        id: newId,
+        holder: 'Gurusamy (User)',
+        phone: '9840112233',
+        plan, cat, premium,
+        dueDate: '2027-03-22',
+        status: 'Active'
+      });
+      saveData();
+      showToast(`Congratulations! Policy ${newId} (${plan}) issued instantly.`, 'success');
+    }
+
+    function renderAlerts() {
+      const box = document.getElementById('smsInboxContainer');
+      box.innerHTML = alerts.map(a => `
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.85rem;">
+          <small style="color: var(--accent-primary); font-weight: 600;">📲 SMS Alert &bull; ${a.date}</small>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.3rem;">${a.text}</p>
+        </div>
+      `).join('');
+    }
+
+    function populateClaimSelect() {
+      const sel = document.getElementById('claimPolicySelect');
+      sel.innerHTML = policies.map(p => `<option value="${p.id}">${p.plan} (${p.id})</option>`).join('');
+    }
+
+    function handleFileClaim(e) {
+      e.preventDefault();
+      const pId = document.getElementById('claimPolicySelect').value;
+      const amount = document.getElementById('claimAmount').value;
+      showToast(`Claim for ₹${amount} logged under ${pId}. TPA auditor assigned.`, 'success');
+      e.target.reset();
+    }
+
+    function renderAgentCustomers() {
+      const tbody = document.getElementById('agentCustomersTableBody');
+      tbody.innerHTML = policies.map(p => `
+        <tr>
+          <td><code>${p.id}</code></td>
+          <td><strong>${p.holder}</strong><br><small>${p.phone}</small></td>
+          <td>${p.plan}</td>
+          <td>${p.dueDate}</td>
+          <td>₹${p.premium}</td>
+          <td>
+            <button class="btn btn-secondary btn-sm" onclick="sendAgentSms('${p.holder}', '${p.phone}', '${p.plan}', '${p.dueDate}')">
+              📲 Send Renewal SMS
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function sendAgentSms(name, phone, plan, dueDate) {
+      const msg = `Dear ${name}, friendly reminder that your ${plan} premium is due on ${dueDate}. Avoid lapse by renewing now.`;
+      alerts.unshift({ id: alerts.length + 1, text: msg, date: new Date().toISOString().split('T')[0] });
+      saveData();
+      showToast(`SMS alert dispatched to ${phone}!`, 'info');
+    }
+
+    function renderAdminAgents() {
+      const tbody = document.getElementById('adminAgentsTableBody');
+      tbody.innerHTML = agents.map(a => `
+        <tr>
+          <td><code>${a.id}</code></td>
+          <td><strong>${a.name}</strong></td>
+          <td>${a.branch}</td>
+          <td>${a.license}</td>
+          <td><span class="badge ${a.status === 'Approved' ? 'badge-success' : 'badge-warning'}">${a.status}</span></td>
+          <td>
+            ${a.status !== 'Approved' ? `<button class="btn btn-success btn-sm" onclick="approveAgent('${a.id}')">Approve License</button>` : `<button class="btn btn-secondary btn-sm" disabled>Verified</button>`}
+          </td>
+        </tr>
+      `).join('');
+
+      document.getElementById('admMgrAgentCount').innerText = agents.filter(a => a.status === 'Approved').length;
+      document.getElementById('admMgrPolicyCount').innerText = policies.length;
+      const premSum = policies.reduce((s, p) => s + p.premium, 0);
+      document.getElementById('admMgrPremiumSum').innerText = `₹${premSum.toLocaleString('en-IN')}`;
+    }
+
+    function approveAgent(id) {
+      const a = agents.find(x => x.id === id);
+      if (a) {
+        a.status = 'Approved';
+        saveData();
+        showToast(`Agent ${a.name} approved for official portal access!`, 'success');
+      }
+    }
+
+    function handleAgentAddCustomer(e) {
+      e.preventDefault();
+      const holder = document.getElementById('agCustName').value.trim();
+      const phone = document.getElementById('agCustPhone').value.trim();
+      const plan = document.getElementById('agCustPlan').value;
+      const dueDate = document.getElementById('agCustDueDate').value;
+
+      policies.push({
+        id: 'POL-' + Math.floor(1000 + Math.random() * 9000),
+        holder, phone, plan, cat: 'Protection', premium: 6500, dueDate, status: 'Active'
+      });
+
+      saveData();
+      closeModal('addCustomerModal');
+      e.target.reset();
+      showToast(`Customer ${holder} enrolled successfully!`, 'success');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initRoleSwitcher();
+      const nextM = new Date('2026-04-15');
+      if (document.getElementById('agCustDueDate')) document.getElementById('agCustDueDate').value = nextM.toISOString().split('T')[0];
+      renderAll();
+    });
+  </script>
+</body>
+</html>

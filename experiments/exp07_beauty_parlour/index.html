@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exp 7: Beauty Parlour Appointment Booking System</title>
+  <link rel="stylesheet" href="../../shared/css/app.css">
+  <style>
+    .stylist-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.25rem;
+    }
+    .slot-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 0.75rem;
+      margin: 1rem 0;
+    }
+    .slot-pill {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 0.5rem;
+      text-align: center;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: var(--transition);
+    }
+    .slot-pill:hover {
+      border-color: var(--accent-primary);
+    }
+    .slot-pill.active {
+      background: var(--accent-gradient);
+      color: #fff;
+      border-color: transparent;
+    }
+    .slot-pill.locked {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+      border-color: rgba(239, 68, 68, 0.3);
+      cursor: not-allowed;
+      text-decoration: line-through;
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="nav-container">
+      <a href="../../index.html" class="brand">
+        💅 <span>GlamourGlow Salon & Spa</span>
+        <span class="brand-badge">Exp 7</span>
+      </a>
+      <div class="role-switcher">
+        <button class="role-btn active" data-role="user">Client / Customer</button>
+        <button class="role-btn" data-role="admin">Salon Manager</button>
+      </div>
+      <a href="../../index.html" class="back-hub-btn">← All Experiments</a>
+    </div>
+  </header>
+
+  <main class="app-container">
+    <!-- CLIENT VIEW -->
+    <div data-role-view="user">
+      <!-- Service Selection & Booking Calendar -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">✨ Select Salon Service & Master Stylist</div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Choose Beauty Service</label>
+            <select id="userServSelect" class="form-select" onchange="updateBookingEstimate()">
+              <option value="Hair Styling & Spa (₹1200)">Hair Styling & Keratin Spa - ₹1,200</option>
+              <option value="Bridal Glow Facial (₹2500)">Bridal 24K Gold Facial - ₹2,500</option>
+              <option value="Pedicure & Manicure (₹900)">Deluxe Organic Manicure & Pedicure - ₹900</option>
+              <option value="Aromatherapy Body Massage (₹3000)">Aromatherapy Relaxation Massage - ₹3,000</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Preferred Stylist</label>
+            <select id="userStylistSelect" class="form-select">
+              <option value="Aanya Sen">Aanya Sen (Senior Hair Specialist)</option>
+              <option value="Pooja Mehta">Pooja Mehta (Skin & Makeup Expert)</option>
+              <option value="Elena Rose">Elena Rose (Nail & Spa Artist)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Reservation Date</label>
+            <input type="date" id="userAppDate" class="form-control" onchange="renderSlots()">
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label">Available Time Slots for Selected Date</label>
+          <div class="slot-grid" id="slotsContainer"></div>
+        </div>
+
+        <!-- Payment Option: Full vs Partial Deposit -->
+        <div style="background: rgba(15,23,42,0.8); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; margin-top: 1rem;">
+          <div class="flex justify-between items-center mb-1">
+            <strong>Payment Method & Deposit Choice</strong>
+            <span class="badge badge-info">Stripe / PayPal Gateway</span>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Payment Mode</label>
+              <select id="payDepositChoice" class="form-select" onchange="updateBookingEstimate()">
+                <option value="Full">Full Payment (100%)</option>
+                <option value="Deposit">Partial Advance Deposit (30%)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Gateway Provider</label>
+              <select id="payGateway" class="form-select">
+                <option value="Stripe">Stripe Secure Card</option>
+                <option value="PayPal">PayPal Express Checkout</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex justify-between items-center mt-2" style="font-size: 1.15rem;">
+            <span>Amount Due Today:</span>
+            <strong id="displayDueAmount" style="color: var(--success);">₹1,200</strong>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" style="width: 100%; margin-top: 1.25rem;" onclick="handleBookAppointment()">
+          Confirm & Reserve Appointment
+        </button>
+      </div>
+
+      <!-- Customer Upcoming Appointments & History -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📅 My Salon Appointments</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Booking Ref</th>
+                <th>Service</th>
+                <th>Stylist</th>
+                <th>Date & Time</th>
+                <th>Paid Amount</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="userAppTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Customer Reviews Form -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">💬 Leave Stylist Review & Experience</div>
+        </div>
+        <form onsubmit="handlePostReview(event)" class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Stylist Name</label>
+            <input type="text" id="revStylist" class="form-control" value="Aanya Sen" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Rating</label>
+            <select id="revRating" class="form-select">
+              <option value="5">⭐⭐⭐⭐⭐ 5 Stars</option>
+              <option value="4">⭐⭐⭐⭐ 4 Stars</option>
+              <option value="3">⭐⭐⭐ 3 Stars</option>
+            </select>
+          </div>
+          <div class="form-group" style="grid-column: span 2;">
+            <label class="form-label">Your Feedback</label>
+            <input type="text" id="revText" class="form-control" placeholder="The hair spa was deeply relaxing..." required>
+          </div>
+          <div class="form-group" style="align-self: flex-end;">
+            <button type="submit" class="btn btn-primary">Submit Review</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- SALON MANAGER VIEW -->
+    <div data-role-view="admin" style="display: none;">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Upcoming Appointments</span>
+          <span class="stat-value" id="mgrUpcomingCount">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Locked-out Hours</span>
+          <span class="stat-value" id="mgrLockedCount">1</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Total Collections</span>
+          <span class="stat-value" id="mgrTotalRev">₹0</span>
+        </div>
+      </div>
+
+      <!-- Hour Lockout Management -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🔒 Lockout Unavailable Hours / Maintenance</div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Select Slot Hour to Lock/Unlock</label>
+            <select id="lockSlotSelect" class="form-select">
+              <option value="10:00 AM">10:00 AM</option>
+              <option value="11:30 AM">11:30 AM</option>
+              <option value="02:00 PM">02:00 PM (Lunch Break)</option>
+              <option value="04:00 PM">04:00 PM</option>
+              <option value="06:00 PM">06:00 PM</option>
+            </select>
+          </div>
+          <div class="form-group" style="align-self: flex-end;">
+            <button class="btn btn-warning" onclick="toggleLockHour()">Toggle Hour Availability</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Manage All Client Reservations -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📋 Reservations Calendar & Client SMS Trigger</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Client</th>
+                <th>Service & Stylist</th>
+                <th>Schedule</th>
+                <th>Payment</th>
+                <th>Status</th>
+                <th>Manager Actions</th>
+              </tr>
+            </thead>
+            <tbody id="mgrAppTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Feedback List -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">⭐ Customer Suggestions & Feedback</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Stylist</th>
+                <th>Rating</th>
+                <th>Client Comment</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="mgrFeedbackBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="../../shared/js/utils.js"></script>
+  <script>
+    const TIME_SLOTS = ['10:00 AM', '11:30 AM', '01:00 PM', '02:00 PM', '03:30 PM', '05:00 PM', '06:30 PM'];
+
+    const DEFAULT_APPTS = [
+      { id: 'GLAM-101', client: 'Divya S', phone: '9840123987', service: 'Bridal Glow Facial (₹2500)', stylist: 'Pooja Mehta', date: '2026-03-27', time: '11:30 AM', payment: 'Deposit (₹750)', status: 'Confirmed' },
+      { id: 'GLAM-102', client: 'Priya K', phone: '9940234567', service: 'Hair Styling & Spa (₹1200)', stylist: 'Aanya Sen', date: '2026-03-27', time: '03:30 PM', payment: 'Full (₹1200)', status: 'Confirmed' }
+    ];
+
+    const DEFAULT_LOCKED = ['02:00 PM'];
+    const DEFAULT_REVIEWS = [
+      { stylist: 'Aanya Sen', rating: '5 Stars', text: 'Amazing scalp therapy and hair spa!', date: '2026-03-20' },
+      { stylist: 'Pooja Mehta', rating: '5 Stars', text: 'Gold facial gave an instant natural glow for my shoot.', date: '2026-03-19' }
+    ];
+
+    let appointments = getStore('ip_lab_exp7_appts', DEFAULT_APPTS);
+    let lockedSlots = getStore('ip_lab_exp7_locked', DEFAULT_LOCKED);
+    let reviews = getStore('ip_lab_exp7_reviews', DEFAULT_REVIEWS);
+    let selectedSlot = '10:00 AM';
+
+    function saveData() {
+      setStore('ip_lab_exp7_appts', appointments);
+      setStore('ip_lab_exp7_locked', lockedSlots);
+      setStore('ip_lab_exp7_reviews', reviews);
+      renderAll();
+    }
+
+    function renderAll() {
+      renderSlots();
+      updateBookingEstimate();
+      renderUserAppts();
+      renderMgrAppts();
+      renderFeedback();
+    }
+
+    function renderSlots() {
+      const container = document.getElementById('slotsContainer');
+      container.innerHTML = TIME_SLOTS.map(s => {
+        const isLocked = lockedSlots.includes(s);
+        const isSelected = selectedSlot === s;
+        return `
+          <div class="slot-pill ${isLocked ? 'locked' : ''} ${isSelected ? 'active' : ''}" 
+               onclick="${isLocked ? '' : `chooseSlot('${s}')`}">
+            ${s} ${isLocked ? '(Locked)' : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function chooseSlot(s) {
+      selectedSlot = s;
+      renderSlots();
+    }
+
+    function toggleLockHour() {
+      const s = document.getElementById('lockSlotSelect').value;
+      if (lockedSlots.includes(s)) {
+        lockedSlots = lockedSlots.filter(x => x !== s);
+        showToast(`Unlocked hour slot: ${s}`, 'success');
+      } else {
+        lockedSlots.push(s);
+        showToast(`Locked unavailable hour: ${s}`, 'warning');
+      }
+      saveData();
+    }
+
+    function updateBookingEstimate() {
+      const serv = document.getElementById('userServSelect').value;
+      let price = 1200;
+      if (serv.includes('2500')) price = 2500;
+      if (serv.includes('900')) price = 900;
+      if (serv.includes('3000')) price = 3000;
+
+      const choice = document.getElementById('payDepositChoice').value;
+      const due = choice === 'Deposit' ? Math.round(price * 0.3) : price;
+      document.getElementById('displayDueAmount').innerText = `₹${due} (${choice === 'Deposit' ? '30% Deposit' : 'Full Amount'})`;
+    }
+
+    function handleBookAppointment() {
+      const serv = document.getElementById('userServSelect').value;
+      const stylist = document.getElementById('userStylistSelect').value;
+      const date = document.getElementById('userAppDate').value || '2026-03-27';
+      const choice = document.getElementById('payDepositChoice').value;
+      const gateway = document.getElementById('payGateway').value;
+
+      if (!selectedSlot || lockedSlots.includes(selectedSlot)) {
+        showToast('Please select a valid open slot!', 'warning');
+        return;
+      }
+
+      let price = 1200;
+      if (serv.includes('2500')) price = 2500;
+      if (serv.includes('900')) price = 900;
+      if (serv.includes('3000')) price = 3000;
+      const due = choice === 'Deposit' ? Math.round(price * 0.3) : price;
+
+      const newId = 'GLAM-' + Math.floor(100 + Math.random() * 900);
+      appointments.unshift({
+        id: newId,
+        client: 'Gurusamy (Client)',
+        phone: '9840112233',
+        service: serv,
+        stylist,
+        date,
+        time: selectedSlot,
+        payment: `${choice} (₹${due}) via ${gateway}`,
+        status: 'Confirmed'
+      });
+
+      saveData();
+      showToast(`Appointment ${newId} confirmed with ${stylist} for ${selectedSlot}!`, 'success');
+    }
+
+    function renderUserAppts() {
+      const tbody = document.getElementById('userAppTableBody');
+      tbody.innerHTML = appointments.map(a => `
+        <tr>
+          <td><code>${a.id}</code></td>
+          <td><strong>${a.service}</strong></td>
+          <td>${a.stylist}</td>
+          <td>${formatDate(a.date)} @ ${a.time}</td>
+          <td>${a.payment}</td>
+          <td><span class="badge ${a.status === 'Confirmed' ? 'badge-success' : 'badge-danger'}">${a.status}</span></td>
+          <td>
+            ${a.status === 'Confirmed' ? `
+              <button class="btn btn-secondary btn-sm" onclick="rescheduleAppt('${a.id}')">Reschedule</button>
+              <button class="btn btn-danger btn-sm" onclick="cancelAppt('${a.id}')">Cancel</button>
+            ` : `<span class="badge badge-info">Closed</span>`}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function rescheduleAppt(id) {
+      const a = appointments.find(x => x.id === id);
+      if (!a) return;
+      const newTime = prompt(`Reschedule ${a.id} to new slot:`, '05:00 PM');
+      if (newTime) {
+        a.time = newTime;
+        saveData();
+        showToast(`Appointment rescheduled to ${newTime}`, 'success');
+      }
+    }
+
+    function cancelAppt(id) {
+      const a = appointments.find(x => x.id === id);
+      if (a && confirm(`Cancel appointment ${id}? Deposit will be refunded to card.`)) {
+        a.status = 'Cancelled';
+        saveData();
+        showToast(`Appointment ${id} cancelled successfully!`, 'info');
+      }
+    }
+
+    function renderMgrAppts() {
+      const tbody = document.getElementById('mgrAppTableBody');
+      tbody.innerHTML = appointments.map(a => `
+        <tr>
+          <td><code>${a.id}</code></td>
+          <td><strong>${a.client}</strong><br><small>${a.phone}</small></td>
+          <td>${a.service}<br><small>${a.stylist}</small></td>
+          <td>${a.date} @ ${a.time}</td>
+          <td>${a.payment}</td>
+          <td><span class="badge ${a.status === 'Confirmed' ? 'badge-success' : 'badge-danger'}">${a.status}</span></td>
+          <td>
+            <button class="btn btn-secondary btn-sm" onclick="sendSmsReminder('${a.client}', '${a.phone}')">📲 SMS Reminder</button>
+            ${a.status === 'Confirmed' ? `<button class="btn btn-danger btn-sm" onclick="cancelAppt('${a.id}')">Cancel</button>` : ''}
+          </td>
+        </tr>
+      `).join('');
+
+      document.getElementById('mgrUpcomingCount').innerText = appointments.filter(a => a.status === 'Confirmed').length;
+      document.getElementById('mgrLockedCount').innerText = lockedSlots.length;
+      document.getElementById('mgrTotalRev').innerText = `₹${appointments.length * 1200}`;
+    }
+
+    function sendSmsReminder(name, phone) {
+      showToast(`SMS sent to ${name} (${phone}): "Reminder: Your GlamourGlow appointment is upcoming!"`, 'info');
+    }
+
+    function renderFeedback() {
+      const tbody = document.getElementById('mgrFeedbackBody');
+      tbody.innerHTML = reviews.map(r => `
+        <tr>
+          <td><strong>${r.stylist}</strong></td>
+          <td>${r.rating}</td>
+          <td>${r.text}</td>
+          <td>${r.date}</td>
+        </tr>
+      `).join('');
+    }
+
+    function handlePostReview(e) {
+      e.preventDefault();
+      const stylist = document.getElementById('revStylist').value.trim();
+      const rating = document.getElementById('revRating').value + ' Stars';
+      const text = document.getElementById('revText').value.trim();
+
+      reviews.unshift({ stylist, rating, text, date: new Date().toISOString().split('T')[0] });
+      saveData();
+      e.target.reset();
+      showToast('Client review posted successfully!', 'success');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initRoleSwitcher();
+      const today = new Date('2026-03-27');
+      document.getElementById('userAppDate').value = today.toISOString().split('T')[0];
+      renderAll();
+    });
+  </script>
+</body>
+</html>

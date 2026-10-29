@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exp 4: Online Train Reservation System</title>
+  <link rel="stylesheet" href="../../shared/css/app.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="nav-container">
+      <a href="../../index.html" class="brand">
+        🚆 <span>RailYatri Portal</span>
+        <span class="brand-badge">Exp 4</span>
+      </a>
+      <div class="role-switcher">
+        <button class="role-btn active" data-role="user">Passenger</button>
+        <button class="role-btn" data-role="admin">Railway Admin</button>
+      </div>
+      <a href="../../index.html" class="back-hub-btn">← All Experiments</a>
+    </div>
+  </header>
+
+  <main class="app-container">
+    <!-- PASSENGER VIEW -->
+    <div data-role-view="user">
+      <!-- Search & Check PNR Quick Bar -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🔍 Search Trains & Real-Time Availability</div>
+          <div class="flex gap-1">
+            <input type="text" id="quickPnrInput" class="form-control" style="width: 170px;" placeholder="Enter 10-digit PNR">
+            <button class="btn btn-secondary btn-sm" onclick="checkPnrStatus()">Check PNR</button>
+          </div>
+        </div>
+        <form onsubmit="handleSearchTrains(event)" class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Origin Station</label>
+            <select id="userOrigin" class="form-select">
+              <option value="MAS">Chennai Central (MAS)</option>
+              <option value="SBC">Bangalore City (SBC)</option>
+              <option value="NDLS">New Delhi (NDLS)</option>
+              <option value="CBE">Coimbatore Jn (CBE)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Destination Station</label>
+            <select id="userDest" class="form-select">
+              <option value="SBC">Bangalore City (SBC)</option>
+              <option value="MAS">Chennai Central (MAS)</option>
+              <option value="NDLS">New Delhi (NDLS)</option>
+              <option value="CBE">Coimbatore Jn (CBE)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Journey Date</label>
+            <input type="date" id="userJourneyDate" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Class Type</label>
+            <select id="userClass" class="form-select">
+              <option value="all">All Classes</option>
+              <option value="1A">AC First Class (1A)</option>
+              <option value="2A">AC 2 Tier (2A)</option>
+              <option value="3A">AC 3 Tier (3A)</option>
+              <option value="SL">Sleeper (SL)</option>
+            </select>
+          </div>
+          <div class="form-group" style="align-self: flex-end;">
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Search Trains</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Train Search Results -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🚄 Available Trains & Route Via Details</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Train No & Name</th>
+                <th>Route (Via Details)</th>
+                <th>Departure / Arrival</th>
+                <th>Available Classes & Seats</th>
+                <th>Base Fare</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="userTrainsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- My Reservations / Cancel with Refund Formula -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🎟️ My Booked Tickets & Cancellation with Refund</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>PNR No</th>
+                <th>Train</th>
+                <th>Journey Date</th>
+                <th>Passengers</th>
+                <th>Class</th>
+                <th>Payment Mode</th>
+                <th>PNR Status</th>
+                <th>Fare Paid</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="userBookedTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Refund Rules Information Accordion/Box -->
+      <div class="card" style="border-left: 4px solid var(--warning);">
+        <div class="card-title" style="margin-bottom: 0.5rem;">📜 Official Railway Cancellation & Refund Policy</div>
+        <ul style="color: var(--text-secondary); font-size: 0.85rem; padding-left: 1.5rem; line-height: 1.8;">
+          <li><strong>> 48 Hours before Journey:</strong> Flat cancellation charge of ₹120 (SL) / ₹240 (AC). (Refund ~ 85%)</li>
+          <li><strong>Between 12 to 48 Hours:</strong> 25% of the total ticket fare is deducted. (Refund 75%)</li>
+          <li><strong>Between 4 to 12 Hours:</strong> 50% of the total ticket fare is deducted. (Refund 50%)</li>
+          <li><strong>Less than 4 Hours / After Charting:</strong> No refund admissible.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- RAILWAY ADMIN VIEW -->
+    <div data-role-view="admin" style="display: none;">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Active Train Routes</span>
+          <span class="stat-value" id="adminTrainCount">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Total PNR Generated</span>
+          <span class="stat-value" id="adminPnrCount">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Total Railway Collections</span>
+          <span class="stat-value" id="adminRevenueCount">₹0</span>
+        </div>
+      </div>
+
+      <!-- Manage Trains & Zone Fares -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🛠️ Manage Trains, Fares & Zone Schedules</div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('addTrainModal')">+ Add Train Schedule</button>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Train No</th>
+                <th>Train Name</th>
+                <th>Zone</th>
+                <th>Route (From ➔ To)</th>
+                <th>Via Stations</th>
+                <th>Class Fares (SL / 3A / 2A / 1A)</th>
+                <th>Seat Inventory</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminTrainTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Master Reservation & PNR Audit List -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📋 Master Passenger PNR Manifest</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>PNR</th>
+                <th>Passenger Names</th>
+                <th>Train</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Mode</th>
+                <th>Fare</th>
+                <th>Refund Processed</th>
+              </tr>
+            </thead>
+            <tbody id="adminManifestBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Train Booking Modal -->
+  <div id="trainBookingModal" class="modal-overlay">
+    <div class="modal" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 class="card-title" id="tbModalTitle">Reserve Train Ticket</h3>
+        <button class="modal-close" onclick="closeModal('trainBookingModal')">&times;</button>
+      </div>
+      <form onsubmit="handleReserveTicket(event)">
+        <div class="modal-body">
+          <input type="hidden" id="tbTrainId">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Chosen Class</label>
+              <select id="tbClassSelect" class="form-select" onchange="updateModalFare()">
+                <option value="SL">Sleeper (SL)</option>
+                <option value="3A">AC 3 Tier (3A)</option>
+                <option value="2A">AC 2 Tier (2A)</option>
+                <option value="1A">AC 1st Class (1A)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Payment Mode</label>
+              <select id="tbPaymentMode" class="form-select">
+                <option value="Online (UPI / NetBanking)">Online (UPI / NetBanking)</option>
+                <option value="Offline (Counter / Cash)">Offline (Counter / Cash)</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Primary Passenger Name</label>
+            <input type="text" id="tbPassengerName" class="form-control" value="Suresh Kumar" required>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Age</label>
+              <input type="number" id="tbAge" class="form-control" value="28" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Gender</label>
+              <select id="tbGender" class="form-select">
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Berth Preference</label>
+            <select id="tbBerth" class="form-select">
+              <option value="Lower Berth">Lower Berth</option>
+              <option value="Middle Berth">Middle Berth</option>
+              <option value="Upper Berth">Upper Berth</option>
+              <option value="Side Lower">Side Lower</option>
+            </select>
+          </div>
+
+          <div style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: var(--radius-md);" id="tbFareDisplay"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('trainBookingModal')">Cancel</button>
+          <button type="submit" class="btn btn-success">Confirm & Generate PNR</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- PNR Status Modal -->
+  <div id="pnrModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="card-title">PNR Status Inquiry</h3>
+        <button class="modal-close" onclick="closeModal('pnrModal')">&times;</button>
+      </div>
+      <div class="modal-body" id="pnrResultContent"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('pnrModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Train Modal -->
+  <div id="addTrainModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="card-title">Schedule New Train</h3>
+        <button class="modal-close" onclick="closeModal('addTrainModal')">&times;</button>
+      </div>
+      <form onsubmit="handleCreateTrain(event)">
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Train Number</label>
+              <input type="text" id="newTrainNo" class="form-control" placeholder="12675" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Train Name</label>
+              <input type="text" id="newTrainName" class="form-control" placeholder="Kovai Superfast Exp" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Railway Zone</label>
+              <input type="text" id="newTrainZone" class="form-control" value="Southern Railway (SR)" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Origin</label>
+              <input type="text" id="newTrainFrom" class="form-control" value="MAS" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Destination</label>
+              <input type="text" id="newTrainTo" class="form-control" value="CBE" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Via Stations</label>
+              <input type="text" id="newTrainVia" class="form-control" value="Katpadi, Jolarpettai, Salem, Erode" required>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Fare SL (₹)</label>
+              <input type="number" id="newFareSL" class="form-control" value="285" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Fare 3A (₹)</label>
+              <input type="number" id="newFare3A" class="form-control" value="760" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Fare 2A (₹)</label>
+              <input type="number" id="newFare2A" class="form-control" value="1080" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Fare 1A (₹)</label>
+              <input type="number" id="newFare1A" class="form-control" value="1800" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('addTrainModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Train Schedule</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../../shared/js/utils.js"></script>
+  <script>
+    const DEFAULT_TRAINS = [
+      {
+        id: 'TR1',
+        no: '12675',
+        name: 'Kovai Superfast Express',
+        zone: 'Southern Railway (SR)',
+        from: 'MAS',
+        to: 'CBE',
+        dep: '06:10',
+        arr: '14:05',
+        via: 'Arakkonam, Katpadi, Jolarpettai, Salem, Erode, Tiruppur',
+        fares: { SL: 260, '3A': 710, '2A': 1020, '1A': 1715 },
+        seats: { SL: 48, '3A': 22, '2A': 12, '1A': 4 }
+      },
+      {
+        id: 'TR2',
+        no: '12007',
+        name: 'Chennai - Mysuru Shatabdi Express',
+        zone: 'Southern Railway (SR)',
+        from: 'MAS',
+        to: 'SBC',
+        dep: '06:00',
+        arr: '10:50',
+        via: 'Katpadi Jn, Bangalore Cant',
+        fares: { SL: 320, '3A': 950, '2A': 1350, '1A': 2100 },
+        seats: { SL: 10, '3A': 35, '2A': 18, '1A': 6 }
+      },
+      {
+        id: 'TR3',
+        no: '12615',
+        name: 'Grand Trunk (GT) Express',
+        zone: 'Northern Railway (NR)',
+        from: 'MAS',
+        to: 'NDLS',
+        dep: '18:50',
+        arr: '06:30 (+2 days)',
+        via: 'Vijayawada, Warangal, Nagpur, Bhopal, Jhansi, Agra',
+        fares: { SL: 780, '3A': 2080, '2A': 3040, '1A': 5200 },
+        seats: { SL: 5, '3A': 14, '2A': 8, '1A': 2 }
+      }
+    ];
+
+    const DEFAULT_RESERVATIONS = [
+      {
+        pnr: '4218901234',
+        trainId: 'TR1',
+        trainNo: '12675',
+        trainName: 'Kovai Superfast Express',
+        journeyDate: '2026-03-28',
+        passengers: [{ name: 'Suresh Kumar', age: 28, gender: 'Male', berth: 'Lower Berth' }],
+        classType: '3A',
+        paymentMode: 'Online (UPI / NetBanking)',
+        fare: 710,
+        status: 'Confirmed (B2, 21)',
+        refundAmount: 0
+      }
+    ];
+
+    let trains = getStore('ip_lab_exp4_trains', DEFAULT_TRAINS);
+    let reservations = getStore('ip_lab_exp4_reservations', DEFAULT_RESERVATIONS);
+
+    function saveData() {
+      setStore('ip_lab_exp4_trains', trains);
+      setStore('ip_lab_exp4_reservations', reservations);
+      renderAll();
+    }
+
+    function renderAll() {
+      renderUserTrains();
+      renderUserBooked();
+      renderAdminTrains();
+      renderAdminManifest();
+    }
+
+    function renderUserTrains() {
+      const from = document.getElementById('userOrigin').value;
+      const to = document.getElementById('userDest').value;
+      const tbody = document.getElementById('userTrainsTableBody');
+
+      tbody.innerHTML = trains.map(t => `
+        <tr>
+          <td>
+            <strong>${t.name}</strong><br>
+            <code>Train #${t.no}</code> &nbsp;<span class="badge badge-info">${t.zone}</span>
+          </td>
+          <td>
+            <strong>${t.from} ➔ ${t.to}</strong><br>
+            <small style="color: var(--text-secondary);">Via: ${t.via}</small>
+          </td>
+          <td>
+            Dep: <strong>${t.dep}</strong><br>
+            Arr: <strong>${t.arr}</strong>
+          </td>
+          <td>
+            <div class="flex gap-1" style="flex-wrap: wrap;">
+              <span class="badge ${t.seats.SL > 0 ? 'badge-success' : 'badge-danger'}">SL: ${t.seats.SL}</span>
+              <span class="badge ${t.seats['3A'] > 0 ? 'badge-success' : 'badge-danger'}">3A: ${t.seats['3A']}</span>
+              <span class="badge ${t.seats['2A'] > 0 ? 'badge-success' : 'badge-danger'}">2A: ${t.seats['2A']}</span>
+              <span class="badge ${t.seats['1A'] > 0 ? 'badge-success' : 'badge-danger'}">1A: ${t.seats['1A']}</span>
+            </div>
+          </td>
+          <td><strong>From ₹${t.fares.SL}</strong></td>
+          <td>
+            <button class="btn btn-primary btn-sm" onclick="openTrainBooking('${t.id}')">Book Ticket</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openTrainBooking(trainId) {
+      const t = trains.find(x => x.id === trainId);
+      if (!t) return;
+      document.getElementById('tbTrainId').value = t.id;
+      document.getElementById('tbModalTitle').innerText = `Book ${t.name} (#${t.no})`;
+      updateModalFare();
+      openModal('trainBookingModal');
+    }
+
+    function updateModalFare() {
+      const trainId = document.getElementById('tbTrainId').value;
+      const t = trains.find(x => x.id === trainId);
+      if (!t) return;
+      const c = document.getElementById('tbClassSelect').value;
+      const fare = t.fares[c];
+      const avail = t.seats[c];
+
+      document.getElementById('tbFareDisplay').innerHTML = `
+        <div class="flex justify-between"><span>Selected Class:</span> <strong>${c}</strong></div>
+        <div class="flex justify-between mt-1"><span>Availability:</span> <span class="badge ${avail > 0 ? 'badge-success' : 'badge-danger'}">${avail > 0 ? avail + ' Seats Available' : 'WL (Waitlist)'}</span></div>
+        <div class="flex justify-between mt-1" style="font-size: 1.15rem; border-top: 1px dashed var(--border-color); padding-top: 0.5rem;">
+          <span>Ticket Fare:</span> <strong style="color: var(--success);">₹${fare}</strong>
+        </div>
+      `;
+    }
+
+    function handleReserveTicket(e) {
+      e.preventDefault();
+      const trainId = document.getElementById('tbTrainId').value;
+      const t = trains.find(x => x.id === trainId);
+      if (!t) return;
+
+      const c = document.getElementById('tbClassSelect').value;
+      const pnr = Math.floor(1000000000 + Math.random() * 9000000000).toString();
+      const passName = document.getElementById('tbPassengerName').value.trim();
+      const age = document.getElementById('tbAge').value;
+      const gender = document.getElementById('tbGender').value;
+      const berth = document.getElementById('tbBerth').value;
+      const mode = document.getElementById('tbPaymentMode').value;
+      const date = document.getElementById('userJourneyDate').value || '2026-03-28';
+      const fare = t.fares[c];
+
+      let pnrStatus = 'Confirmed';
+      if (t.seats[c] > 0) {
+        t.seats[c]--;
+        pnrStatus = `Confirmed (${c}-${Math.floor(1 + Math.random() * 50)})`;
+      } else {
+        pnrStatus = `Waiting List (WL-${Math.floor(1 + Math.random() * 10)})`;
+      }
+
+      const newReservation = {
+        pnr,
+        trainId: t.id,
+        trainNo: t.no,
+        trainName: t.name,
+        journeyDate: date,
+        passengers: [{ name: passName, age, gender, berth }],
+        classType: c,
+        paymentMode: mode,
+        fare,
+        status: pnrStatus,
+        refundAmount: 0
+      };
+
+      reservations.unshift(newReservation);
+      saveData();
+      closeModal('trainBookingModal');
+      showToast(`Ticket Booked! 10-Digit PNR: ${pnr} (${pnrStatus})`, 'success');
+    }
+
+    function renderUserBooked() {
+      const tbody = document.getElementById('userBookedTableBody');
+      tbody.innerHTML = reservations.map(r => `
+        <tr>
+          <td><code>${r.pnr}</code></td>
+          <td><strong>${r.trainName}</strong> (#${r.trainNo})</td>
+          <td>${formatDate(r.journeyDate)}</td>
+          <td>${r.passengers[0].name} (${r.passengers[0].age}, ${r.passengers[0].berth})</td>
+          <td><span class="badge badge-info">${r.classType}</span></td>
+          <td><small>${r.paymentMode}</small></td>
+          <td><span class="badge ${r.status.startsWith('Confirmed') ? 'badge-success' : (r.status.startsWith('Cancelled') ? 'badge-danger' : 'badge-warning')}">${r.status}</span></td>
+          <td>₹${r.fare}</td>
+          <td>
+            ${!r.status.startsWith('Cancelled') ? `<button class="btn btn-danger btn-sm" onclick="cancelTrainTicket('${r.pnr}')">Cancel Ticket</button>` : `<small style="color: var(--success);">Refund: ₹${r.refundAmount}</small>`}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // Cancellation with dynamic refund rules (date wise, percentage)
+    function cancelTrainTicket(pnr) {
+      const r = reservations.find(x => x.pnr === pnr);
+      if (!r) return;
+
+      const journey = new Date(r.journeyDate);
+      const today = new Date('2026-03-22');
+      const hoursLeft = (journey - today) / (1000 * 60 * 60);
+
+      let refundPercent = 0.50; // default
+      if (hoursLeft > 48) refundPercent = 0.85; // 85% refund
+      else if (hoursLeft >= 12) refundPercent = 0.75; // 75% refund
+      else if (hoursLeft >= 4) refundPercent = 0.50; // 50% refund
+      else refundPercent = 0; // 0%
+
+      const refundAmount = Math.round(r.fare * refundPercent);
+      if (confirm(`PNR: ${pnr}\nTotal Fare: ₹${r.fare}\nCancellation Refund Applicable: ${refundPercent * 100}% = ₹${refundAmount}\nProceed with cancellation?`)) {
+        r.status = 'Cancelled & Refunded';
+        r.refundAmount = refundAmount;
+
+        const t = trains.find(x => x.id === r.trainId);
+        if (t && t.seats[r.classType] !== undefined) {
+          t.seats[r.classType]++;
+        }
+
+        saveData();
+        showToast(`Ticket cancelled! Refund of ₹${refundAmount} processed to ${r.paymentMode}`, 'info');
+      }
+    }
+
+    function checkPnrStatus() {
+      const pnr = document.getElementById('quickPnrInput').value.trim();
+      if (!pnr) {
+        showToast('Please enter a PNR number', 'warning');
+        return;
+      }
+      const r = reservations.find(x => x.pnr === pnr);
+      const content = document.getElementById('pnrResultContent');
+      if (r) {
+        content.innerHTML = `
+          <div style="background: rgba(15,23,42,0.8); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem;">
+            <div class="flex justify-between items-center mb-1">
+              <span style="font-size: 1.1rem; font-weight: 700;">PNR: ${r.pnr}</span>
+              <span class="badge ${r.status.startsWith('Confirmed') ? 'badge-success' : 'badge-warning'}">${r.status}</span>
+            </div>
+            <p><strong>Train:</strong> ${r.trainName} (#${r.trainNo})</p>
+            <p><strong>Journey Date:</strong> ${formatDate(r.journeyDate)}</p>
+            <p><strong>Class:</strong> ${r.classType} &nbsp;|&nbsp; <strong>Mode:</strong> ${r.paymentMode}</p>
+            <p><strong>Passenger:</strong> ${r.passengers[0].name} (${r.passengers[0].berth})</p>
+          </div>
+        `;
+      } else {
+        content.innerHTML = `<div class="empty-state"><p>No reservation found for PNR <code>${pnr}</code></p></div>`;
+      }
+      openModal('pnrModal');
+    }
+
+    function renderAdminTrains() {
+      const tbody = document.getElementById('adminTrainTableBody');
+      tbody.innerHTML = trains.map(t => `
+        <tr>
+          <td><code>${t.no}</code></td>
+          <td><strong>${t.name}</strong></td>
+          <td><small>${t.zone}</small></td>
+          <td>${t.from} ➔ ${t.to}</td>
+          <td><small>${t.via}</small></td>
+          <td>
+            <small>SL:₹${t.fares.SL} | 3A:₹${t.fares['3A']} | 2A:₹${t.fares['2A']} | 1A:₹${t.fares['1A']}</small>
+          </td>
+          <td>
+            <small>SL:${t.seats.SL} | 3A:${t.seats['3A']} | 2A:${t.seats['2A']}</small>
+          </td>
+          <td>
+            <button class="btn btn-danger btn-sm" onclick="deleteTrain('${t.id}')">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+
+      document.getElementById('adminTrainCount').innerText = trains.length;
+      document.getElementById('adminPnrCount').innerText = reservations.length;
+      const totalRev = reservations.reduce((sum, r) => sum + (r.fare - (r.refundAmount || 0)), 0);
+      document.getElementById('adminRevenueCount').innerText = `₹${totalRev}`;
+    }
+
+    function deleteTrain(id) {
+      trains = trains.filter(t => t.id !== id);
+      saveData();
+      showToast('Train removed from timetable', 'warning');
+    }
+
+    function renderAdminManifest() {
+      const tbody = document.getElementById('adminManifestBody');
+      tbody.innerHTML = reservations.map(r => `
+        <tr>
+          <td><code>${r.pnr}</code></td>
+          <td><strong>${r.passengers[0].name}</strong> (${r.passengers[0].age}y)</td>
+          <td>${r.trainName} (#${r.trainNo})</td>
+          <td>${r.journeyDate}</td>
+          <td><span class="badge ${r.status.startsWith('Confirmed') ? 'badge-success' : 'badge-warning'}">${r.status}</span></td>
+          <td>${r.paymentMode}</td>
+          <td>₹${r.fare}</td>
+          <td>${r.refundAmount ? `₹${r.refundAmount}` : '-'}</td>
+        </tr>
+      `).join('');
+    }
+
+    function handleCreateTrain(e) {
+      e.preventDefault();
+      const no = document.getElementById('newTrainNo').value.trim();
+      const name = document.getElementById('newTrainName').value.trim();
+      const zone = document.getElementById('newTrainZone').value.trim();
+      const from = document.getElementById('newTrainFrom').value.trim();
+      const to = document.getElementById('newTrainTo').value.trim();
+      const via = document.getElementById('newTrainVia').value.trim();
+      const sl = parseInt(document.getElementById('newFareSL').value) || 250;
+      const a3 = parseInt(document.getElementById('newFare3A').value) || 750;
+      const a2 = parseInt(document.getElementById('newFare2A').value) || 1100;
+      const a1 = parseInt(document.getElementById('newFare1A').value) || 1800;
+
+      trains.push({
+        id: 'TR' + (trains.length + 1),
+        no, name, zone, from, to, dep: '12:00', arr: '20:30', via,
+        fares: { SL: sl, '3A': a3, '2A': a2, '1A': a1 },
+        seats: { SL: 50, '3A': 30, '2A': 15, '1A': 6 }
+      });
+      saveData();
+      closeModal('addTrainModal');
+      e.target.reset();
+      showToast(`Train ${name} added!`, 'success');
+    }
+
+    function handleSearchTrains(e) {
+      e.preventDefault();
+      renderUserTrains();
+      showToast('Filtered trains by route and class criteria!', 'info');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initRoleSwitcher();
+      const today = new Date('2026-03-28');
+      document.getElementById('userJourneyDate').value = today.toISOString().split('T')[0];
+      renderAll();
+    });
+  </script>
+</body>
+</html>

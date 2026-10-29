@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exp 16: ComplainEase Online Grievance System</title>
+  <link rel="stylesheet" href="../../shared/css/app.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="nav-container">
+      <a href="../../index.html" class="brand">
+        📢 <span>ComplainEase Portal</span>
+        <span class="brand-badge">Exp 16</span>
+      </a>
+      <div class="role-switcher">
+        <button class="role-btn active" data-role="citizen">Citizen / User</button>
+        <button class="role-btn" data-role="officer">Zonal Field Officer</button>
+        <button class="role-btn" data-role="admin">Municipal Admin</button>
+      </div>
+      <a href="../../index.html" class="back-hub-btn">← All Experiments</a>
+    </div>
+  </header>
+
+  <main class="app-container">
+    <!-- CITIZEN VIEW -->
+    <div data-role-view="citizen">
+      <!-- Post Grievance Form -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📝 Register Public Grievance / Complaint</div>
+        </div>
+        <form onsubmit="handlePostComplaint(event)" class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Grievance Category</label>
+            <select id="cmpCategory" class="form-select">
+              <option value="Roads & Potholes">Roads & Potholes</option>
+              <option value="Street Lighting">Street Lighting & Electrical</option>
+              <option value="Water Supply & Drainage">Water Supply & Drainage Overflow</option>
+              <option value="Garbage & Solid Waste">Garbage & Solid Waste Management</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Location / Ward Area</label>
+            <input type="text" id="cmpLocation" class="form-control" placeholder="Ward 14, 2nd Main Road, Gandhi Nagar" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Google Maps GPS Tag</label>
+            <input type="text" id="cmpGps" class="form-control" value="13.0827° N, 80.2707° E (Geo-tagged Pin)" readonly>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Supporting Proof / Photo</label>
+            <input type="text" id="cmpProofDoc" class="form-control" value="site_evidence_photo.jpg (Uploaded)">
+          </div>
+          <div class="form-group" style="grid-column: span 2;">
+            <label class="form-label">Detailed Description of Problem</label>
+            <textarea id="cmpDesc" class="form-control" rows="2" placeholder="Severe crater on corner road causing vehicle accidents..." required></textarea>
+          </div>
+          <div class="form-group" style="align-self: flex-end;">
+            <button type="submit" class="btn btn-primary" style="width: 100%;">File Complaint & Get Tracking ID</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Complaint Tracking & Status -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🔍 Track My Complaints & Inspection Proof of Work</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Complaint ID</th>
+                <th>Category</th>
+                <th>Location</th>
+                <th>Filed Date</th>
+                <th>Assigned Officer</th>
+                <th>Status</th>
+                <th>Officer Proof of Work</th>
+              </tr>
+            </thead>
+            <tbody id="userComplaintsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Admin Contact Details & Emergency Helplines -->
+      <div class="card" style="border-left: 4px solid var(--info);">
+        <div class="card-title" style="margin-bottom: 0.5rem;">📞 Municipal Grievance Redressal Cell & Helplines</div>
+        <p style="color: var(--text-secondary); font-size: 0.85rem;">Toll-Free Helpline: <strong>1913</strong> (24x7 Control Room) &nbsp;|&nbsp; Chief Officer Email: <code>grievance@citycorp.gov.in</code> &nbsp;|&nbsp; Head Office: Ripon Building, Central Ward.</p>
+      </div>
+    </div>
+
+    <!-- FIELD OFFICER VIEW -->
+    <div data-role-view="officer" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">👷 Assigned Complaints & Proof of Work Upload</div>
+          <span class="badge badge-info">Officer ID: OFF-042 (Zone 5)</span>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Category</th>
+                <th>Location</th>
+                <th>Citizen Details</th>
+                <th>Current Status</th>
+                <th>Update Status & Proof</th>
+              </tr>
+            </thead>
+            <tbody id="officerComplaintsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- MUNICIPAL ADMIN VIEW -->
+    <div data-role-view="admin" style="display: none;">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Total Grievances</span>
+          <span class="stat-value" id="admTotalCmp">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Resolved Cases</span>
+          <span class="stat-value" id="admResolvedCmp">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Registered Officers</span>
+          <span class="stat-value" id="admOfficerCount">3</span>
+        </div>
+      </div>
+
+      <!-- Officer ID & Account Generator -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">👮 Generate Official Officer Credentials & Rights</div>
+        </div>
+        <form onsubmit="handleCreateOfficer(event)" class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Officer Full Name</label>
+            <input type="text" id="offName" class="form-control" placeholder="Er. S. Manoharan" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Assigned Ward / Zone</label>
+            <input type="text" id="offZone" class="form-control" placeholder="Zone 8 (Central)" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Generated Login ID</label>
+            <input type="text" id="offLoginId" class="form-control" value="OFF-109" readonly>
+          </div>
+          <div class="form-group" style="align-self: flex-end;">
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Create Officer Credentials</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Master Grievance Audit -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📋 Master Grievance Oversight & Escalation</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Category</th>
+                <th>Location</th>
+                <th>Officer</th>
+                <th>Status</th>
+                <th>Admin Action</th>
+              </tr>
+            </thead>
+            <tbody id="adminComplaintsAuditBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Proof of Work Update Modal for Officer -->
+  <div id="proofModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="card-title" id="proofModalTitle">Update Resolution Status</h3>
+        <button class="modal-close" onclick="closeModal('proofModal')">&times;</button>
+      </div>
+      <form onsubmit="handleSaveProofOfWork(event)">
+        <div class="modal-body">
+          <input type="hidden" id="proofCmpId">
+          <div class="form-group">
+            <label class="form-label">Resolution Status</label>
+            <select id="proofStatusSelect" class="form-select">
+              <option value="Under Inspection">Under Inspection (Field Crew Dispatched)</option>
+              <option value="Work in Progress">Work in Progress</option>
+              <option value="Resolved">Resolved & Cleared</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Proof of Work Photo / Document</label>
+            <input type="text" id="proofDocInput" class="form-control" value="road_asphalt_repaired_proof.jpg" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Officer Resolution Remarks</label>
+            <textarea id="proofRemarks" class="form-control" rows="2" placeholder="Cold-mix bitumen applied and leveled. Surface opened for traffic..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('proofModal')">Cancel</button>
+          <button type="submit" class="btn btn-success">Submit Proof of Work</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../../shared/js/utils.js"></script>
+  <script>
+    const DEFAULT_COMPLAINTS = [
+      {
+        id: 'CMP-701',
+        category: 'Roads & Potholes',
+        location: 'Ward 14, 2nd Main Road, Gandhi Nagar',
+        gps: '13.0827° N, 80.2707° E',
+        desc: 'Deep 2-foot pothole near bus shelter dangerous for two-wheelers during rain.',
+        citizen: 'Gurusamy (Citizen)',
+        date: '2026-03-21',
+        officer: 'Er. S. Manoharan (Zone 8)',
+        status: 'Work in Progress',
+        proof: 'Inspection initiated. Road rollers on site.'
+      },
+      {
+        id: 'CMP-702',
+        category: 'Street Lighting',
+        location: 'Ward 9, Cross Street 4, Anna Nagar',
+        gps: '13.0850° N, 80.2100° E',
+        desc: '4 continuous LED sodium lamps non-functional for past 5 days.',
+        citizen: 'Kavitha R',
+        date: '2026-03-18',
+        officer: 'Er. S. Manoharan (Zone 8)',
+        status: 'Resolved',
+        proof: 'Defective underground fuse cable replaced. All 4 lights tested ok.'
+      }
+    ];
+
+    let complaints = getStore('ip_lab_exp16_cmps', DEFAULT_COMPLAINTS);
+
+    function saveData() {
+      setStore('ip_lab_exp16_cmps', complaints);
+      renderAll();
+    }
+
+    function renderAll() {
+      renderUserComplaints();
+      renderOfficerComplaints();
+      renderAdminAudit();
+    }
+
+    function handlePostComplaint(e) {
+      e.preventDefault();
+      const category = document.getElementById('cmpCategory').value;
+      const location = document.getElementById('cmpLocation').value.trim();
+      const gps = document.getElementById('cmpGps').value;
+      const desc = document.getElementById('cmpDesc').value.trim();
+      const newId = 'CMP-' + Math.floor(100 + Math.random() * 900);
+
+      complaints.unshift({
+        id: newId,
+        category,
+        location,
+        gps,
+        desc,
+        citizen: 'Gurusamy (Citizen)',
+        date: new Date().toISOString().split('T')[0],
+        officer: 'Er. S. Manoharan (Zone 8)',
+        status: 'Registered',
+        proof: 'Pending field officer inspection.'
+      });
+
+      saveData();
+      e.target.reset();
+      showToast(`Grievance filed! Tracking ID: ${newId}. SMS updates enabled.`, 'success');
+    }
+
+    function renderUserComplaints() {
+      const tbody = document.getElementById('userComplaintsBody');
+      tbody.innerHTML = complaints.map(c => `
+        <tr>
+          <td><code>${c.id}</code></td>
+          <td><strong>${c.category}</strong></td>
+          <td>${c.location}</td>
+          <td>${c.date}</td>
+          <td>${c.officer}</td>
+          <td><span class="badge ${c.status === 'Resolved' ? 'badge-success' : 'badge-warning'}">${c.status}</span></td>
+          <td><small style="color: var(--accent-secondary);">${c.proof}</small></td>
+        </tr>
+      `).join('');
+    }
+
+    function renderOfficerComplaints() {
+      const tbody = document.getElementById('officerComplaintsBody');
+      tbody.innerHTML = complaints.map(c => `
+        <tr>
+          <td><code>${c.id}</code></td>
+          <td><strong>${c.category}</strong></td>
+          <td>${c.location}<br><small>${c.gps}</small></td>
+          <td>${c.citizen}<br><small>Issue: ${c.desc}</small></td>
+          <td><span class="badge ${c.status === 'Resolved' ? 'badge-success' : 'badge-warning'}">${c.status}</span></td>
+          <td>
+            <button class="btn btn-primary btn-sm" onclick="openProofModal('${c.id}')">Update Work Proof</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openProofModal(id) {
+      const c = complaints.find(x => x.id === id);
+      if (!c) return;
+      document.getElementById('proofCmpId').value = c.id;
+      document.getElementById('proofModalTitle').innerText = `Update Action for ${c.id}`;
+      document.getElementById('proofStatusSelect').value = c.status;
+      openModal('proofModal');
+    }
+
+    function handleSaveProofOfWork(e) {
+      e.preventDefault();
+      const id = document.getElementById('proofCmpId').value;
+      const c = complaints.find(x => x.id === id);
+      if (!c) return;
+
+      c.status = document.getElementById('proofStatusSelect').value;
+      c.proof = document.getElementById('proofRemarks').value.trim();
+      saveData();
+      closeModal('proofModal');
+      showToast(`Proof of work recorded for ${id}! Citizen notified.`, 'success');
+    }
+
+    function renderAdminAudit() {
+      const tbody = document.getElementById('adminComplaintsAuditBody');
+      tbody.innerHTML = complaints.map(c => `
+        <tr>
+          <td><code>${c.id}</code></td>
+          <td>${c.category}</td>
+          <td>${c.location}</td>
+          <td>${c.officer}</td>
+          <td><span class="badge ${c.status === 'Resolved' ? 'badge-success' : 'badge-warning'}">${c.status}</span></td>
+          <td>
+            <button class="btn btn-danger btn-sm" onclick="deleteComplaint('${c.id}')">Close & Archive</button>
+          </td>
+        </tr>
+      `).join('');
+
+      document.getElementById('admTotalCmp').innerText = complaints.length;
+      document.getElementById('admResolvedCmp').innerText = complaints.filter(c => c.status === 'Resolved').length;
+    }
+
+    function deleteComplaint(id) {
+      complaints = complaints.filter(c => c.id !== id);
+      saveData();
+      showToast('Grievance archived by administrator', 'warning');
+    }
+
+    function handleCreateOfficer(e) {
+      e.preventDefault();
+      const name = document.getElementById('offName').value.trim();
+      const zone = document.getElementById('offZone').value.trim();
+      const id = document.getElementById('offLoginId').value;
+      showToast(`Credentials generated for Officer ${name} (${id}) in ${zone}!`, 'success');
+      e.target.reset();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initRoleSwitcher();
+      renderAll();
+    });
+  </script>
+</body>
+</html>

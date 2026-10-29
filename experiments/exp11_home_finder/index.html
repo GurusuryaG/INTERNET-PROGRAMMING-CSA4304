@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exp 11: Home Finder Real Estate Platform</title>
+  <link rel="stylesheet" href="../../shared/css/app.css">
+  <style>
+    .property-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.5rem;
+    }
+    .prop-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: var(--transition);
+    }
+    .prop-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent-primary);
+    }
+    .prop-img-box {
+      height: 180px;
+      background: linear-gradient(135deg, #065f46, #047857);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .prop-body {
+      padding: 1.25rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="nav-container">
+      <a href="../../index.html" class="brand">
+        🏡 <span>HomeFinder Realty</span>
+        <span class="brand-badge">Exp 11</span>
+      </a>
+      <div class="role-switcher">
+        <button class="role-btn active" data-role="user">Buyer / Tenant</button>
+        <button class="role-btn" data-role="admin">Realtor Admin</button>
+      </div>
+      <a href="../../index.html" class="back-hub-btn">← All Experiments</a>
+    </div>
+  </header>
+
+  <main class="app-container">
+    <!-- BUYER VIEW -->
+    <div data-role-view="user">
+      <!-- Search with Persistent Criteria -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🔍 Search Homes, Lands & Commercial Properties</div>
+          <button class="btn btn-secondary btn-sm" onclick="saveSearchCriteria()">💾 Save My Search Criteria</button>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">City / Locality</label>
+            <input type="text" id="propLoc" class="form-control" placeholder="Adyar, Whitefield, Koramangala..." oninput="renderProperties()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Property Type</label>
+            <select id="propType" class="form-select" onchange="renderProperties()">
+              <option value="all">All Types</option>
+              <option value="Villa">Luxury Villa</option>
+              <option value="Apartment">Residential Apartment</option>
+              <option value="Commercial">Commercial Office</option>
+              <option value="Plot">Residential Land/Plot</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Budget Range</label>
+            <select id="propBudget" class="form-select" onchange="renderProperties()">
+              <option value="all">Any Budget</option>
+              <option value="50L">Under ₹50 Lakhs</option>
+              <option value="1Cr">Under ₹1 Crore</option>
+              <option value="2Cr">Under ₹2.5 Crores</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Properties Grid -->
+      <div class="property-grid" id="propertiesListGrid"></div>
+
+      <!-- Financial Tools: EMI & Mortgage Calculator -->
+      <div class="card mt-2">
+        <div class="card-header">
+          <div class="card-title">🧮 Interactive Home Loan EMI & Mortgage Calculator</div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Loan Amount (₹)</label>
+            <input type="number" id="emiPrincipal" class="form-control" value="5000000" oninput="calculateEmi()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Annual Interest Rate (%)</label>
+            <input type="number" id="emiRate" class="form-control" value="8.5" step="0.1" oninput="calculateEmi()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tenure (Years)</label>
+            <input type="number" id="emiTenure" class="form-control" value="20" oninput="calculateEmi()">
+          </div>
+        </div>
+        <div style="background: rgba(15,23,42,0.8); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; margin-top: 1rem;">
+          <div class="flex justify-between items-center">
+            <span>Estimated Monthly EMI:</span>
+            <strong id="displayMonthlyEmi" style="font-size: 1.35rem; color: var(--success);">₹43,391 / month</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scheduled Site Visits -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📅 My Scheduled Property Site Visits</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Visit ID</th>
+                <th>Property</th>
+                <th>Location</th>
+                <th>Date & Time</th>
+                <th>Agent Assigned</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="userVisitsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN VIEW -->
+    <div data-role-view="admin" style="display: none;">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Listed Properties</span>
+          <span class="stat-value" id="admPropCount">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Site Visits Scheduled</span>
+          <span class="stat-value" id="admVisitsCount">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Registered Buyers</span>
+          <span class="stat-value">34</span>
+        </div>
+      </div>
+
+      <!-- Manage Properties -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🛠️ Manage Property Database</div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('addPropModal')">+ Add New Property</button>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Type</th>
+                <th>Location</th>
+                <th>Price (₹)</th>
+                <th>Area (sq.ft)</th>
+                <th>Agent</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminPropTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Visitor Audit Log -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">👥 Property Visit Inquiries & Buyer Log</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Buyer Name</th>
+                <th>Property</th>
+                <th>Visit Date</th>
+                <th>Agent</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="adminVisitsAuditBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Schedule Visit Modal -->
+  <div id="visitModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="card-title" id="visitModalTitle">Schedule Property Viewing</h3>
+        <button class="modal-close" onclick="closeModal('visitModal')">&times;</button>
+      </div>
+      <form onsubmit="handleConfirmVisit(event)">
+        <div class="modal-body">
+          <input type="hidden" id="visitPropId">
+          <div class="form-group">
+            <label class="form-label">Buyer Full Name</label>
+            <input type="text" id="visitBuyerName" class="form-control" value="Gurusamy (Buyer)" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Contact Phone</label>
+            <input type="tel" id="visitBuyerPhone" class="form-control" value="9840332211" required>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Preferred Date</label>
+              <input type="date" id="visitDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Time Slot</label>
+              <select id="visitTime" class="form-select">
+                <option value="10:00 AM">10:00 AM</option>
+                <option value="02:30 PM">02:30 PM</option>
+                <option value="05:00 PM">05:00 PM</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('visitModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Book Site Tour</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Property Modal -->
+  <div id="addPropModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="card-title">Add Property to Database</h3>
+        <button class="modal-close" onclick="closeModal('addPropModal')">&times;</button>
+      </div>
+      <form onsubmit="handleCreateProperty(event)">
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Property Title</label>
+              <input type="text" id="newPropTitle" class="form-control" placeholder="Sobha Grandeur 3BHK" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Type</label>
+              <select id="newPropType" class="form-select">
+                <option value="Apartment">Apartment</option>
+                <option value="Villa">Villa</option>
+                <option value="Commercial">Commercial</option>
+                <option value="Plot">Plot</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Locality / City</label>
+              <input type="text" id="newPropLoc" class="form-control" placeholder="Adyar, Chennai" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Price (₹)</label>
+              <input type="number" id="newPropPrice" class="form-control" value="8500000" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Carpet Area (sq.ft)</label>
+              <input type="number" id="newPropArea" class="form-control" value="1650" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Assigned Agent</label>
+              <input type="text" id="newPropAgent" class="form-control" value="Preethi Realtor Inc" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('addPropModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Property</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../../shared/js/utils.js"></script>
+  <script>
+    const DEFAULT_PROPS = [
+      { id: 'PROP1', title: 'Serene Palm Beach Villa 4BHK', type: 'Villa', location: 'ECR, Chennai', price: 22000000, priceStr: '₹2.20 Cr', area: 3400, agent: 'Preethi Realtors', emoji: '🏰', amenities: 'Private Pool, Garden, Sea View' },
+      { id: 'PROP2', title: 'Prestige Lakeside 3BHK Apartment', type: 'Apartment', location: 'Whitefield, Bangalore', price: 9500000, priceStr: '₹95 Lakhs', area: 1750, agent: 'Apex Housing', emoji: '🏢', amenities: 'Clubhouse, Gym, 2 Car Parks' },
+      { id: 'PROP3', title: 'Prime Corner Commercial Office Space', type: 'Commercial', location: 'T. Nagar, Chennai', price: 16000000, priceStr: '₹1.60 Cr', area: 2200, agent: 'Metro Realty', emoji: '🏬', amenities: 'Power Backup, Elevator, Road Frontage' },
+      { id: 'PROP4', title: 'Gated Villa Plot in Eco City', type: 'Plot', location: 'Adyar, Chennai', price: 4800000, priceStr: '₹48 Lakhs', area: 1200, agent: 'Apex Housing', emoji: '⛳', amenities: 'DTCP Approved, Blacktop Roads, Water Line' }
+    ];
+
+    const DEFAULT_VISITS = [
+      { id: 'VIS-301', buyer: 'Gurusamy (Buyer)', phone: '9840332211', propId: 'PROP2', propTitle: 'Prestige Lakeside 3BHK', location: 'Whitefield, Bangalore', date: '2026-03-29', time: '10:00 AM', agent: 'Apex Housing', status: 'Confirmed' }
+    ];
+
+    let properties = getStore('ip_lab_exp11_props', DEFAULT_PROPS);
+    let visits = getStore('ip_lab_exp11_visits', DEFAULT_VISITS);
+
+    function saveData() {
+      setStore('ip_lab_exp11_props', properties);
+      setStore('ip_lab_exp11_visits', visits);
+      renderAll();
+    }
+
+    function renderAll() {
+      renderProperties();
+      renderUserVisits();
+      renderAdminProps();
+      renderAdminVisits();
+      calculateEmi();
+    }
+
+    function saveSearchCriteria() {
+      const loc = document.getElementById('propLoc').value;
+      const type = document.getElementById('propType').value;
+      const budget = document.getElementById('propBudget').value;
+      localStorage.setItem('ip_lab_exp11_saved_criteria', JSON.stringify({ loc, type, budget }));
+      showToast('Search preferences saved! You won\'t need to re-enter them.', 'success');
+    }
+
+    function renderProperties() {
+      const locQ = (document.getElementById('propLoc').value || '').toLowerCase();
+      const type = document.getElementById('propType').value;
+      const budget = document.getElementById('propBudget').value;
+
+      const filtered = properties.filter(p => {
+        const mLoc = p.location.toLowerCase().includes(locQ) || p.title.toLowerCase().includes(locQ);
+        const mType = type === 'all' || p.type === type;
+        let mBudget = true;
+        if (budget === '50L') mBudget = p.price <= 5000000;
+        if (budget === '1Cr') mBudget = p.price <= 10000000;
+        if (budget === '2Cr') mBudget = p.price <= 25000000;
+        return mLoc && mType && mBudget;
+      });
+
+      const grid = document.getElementById('propertiesListGrid');
+      grid.innerHTML = filtered.map(p => `
+        <div class="prop-card">
+          <div class="prop-img-box">${p.emoji}</div>
+          <div class="prop-body">
+            <div class="flex justify-between items-center mb-1">
+              <strong style="font-size: 1.15rem; color: #fff;">${p.title}</strong>
+            </div>
+            <p style="color: var(--accent-secondary); font-size: 0.85rem;">📍 ${p.location} &bull; <span class="badge badge-info">${p.type}</span></p>
+            <p style="color: var(--text-secondary); font-size: 0.8rem; margin: 0.5rem 0;">✨ ${p.amenities} (${p.area} sq.ft)</p>
+            <div class="flex justify-between items-center mt-2">
+              <strong style="font-size: 1.35rem; color: var(--accent-primary);">${p.priceStr || '₹' + p.price.toLocaleString('en-IN')}</strong>
+              <small style="color: var(--text-secondary);">Agent: ${p.agent}</small>
+            </div>
+            <button class="btn btn-primary btn-sm mt-2" onclick="openVisitModal('${p.id}')">Schedule Free Visit</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function calculateEmi() {
+      const P = parseFloat(document.getElementById('emiPrincipal').value) || 5000000;
+      const annualRate = parseFloat(document.getElementById('emiRate').value) || 8.5;
+      const years = parseFloat(document.getElementById('emiTenure').value) || 20;
+
+      const r = (annualRate / 12) / 100;
+      const n = years * 12;
+      const emi = Math.round((P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1));
+
+      document.getElementById('displayMonthlyEmi').innerText = `₹${emi.toLocaleString('en-IN')} / month`;
+    }
+
+    function openVisitModal(propId) {
+      const p = properties.find(x => x.id === propId);
+      if (!p) return;
+      document.getElementById('visitPropId').value = p.id;
+      document.getElementById('visitModalTitle').innerText = `Visit: ${p.title}`;
+      openModal('visitModal');
+    }
+
+    function handleConfirmVisit(e) {
+      e.preventDefault();
+      const pId = document.getElementById('visitPropId').value;
+      const p = properties.find(x => x.id === pId);
+      if (!p) return;
+
+      const newId = 'VIS-' + Math.floor(100 + Math.random() * 900);
+      const buyer = document.getElementById('visitBuyerName').value.trim();
+      const phone = document.getElementById('visitBuyerPhone').value.trim();
+      const date = document.getElementById('visitDate').value || '2026-03-29';
+      const time = document.getElementById('visitTime').value;
+
+      visits.unshift({
+        id: newId,
+        buyer, phone,
+        propId: p.id,
+        propTitle: p.title,
+        location: p.location,
+        date, time,
+        agent: p.agent,
+        status: 'Confirmed'
+      });
+
+      saveData();
+      closeModal('visitModal');
+      showToast(`Site tour booked! Agent ${p.agent} will meet you on ${date} at ${time}.`, 'success');
+    }
+
+    function renderUserVisits() {
+      const tbody = document.getElementById('userVisitsTableBody');
+      tbody.innerHTML = visits.map(v => `
+        <tr>
+          <td><code>${v.id}</code></td>
+          <td><strong>${v.propTitle}</strong></td>
+          <td>${v.location}</td>
+          <td>${formatDate(v.date)} @ ${v.time}</td>
+          <td>${v.agent}</td>
+          <td><span class="badge badge-success">${v.status}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function renderAdminProps() {
+      const tbody = document.getElementById('adminPropTableBody');
+      tbody.innerHTML = properties.map(p => `
+        <tr>
+          <td><strong>${p.title}</strong></td>
+          <td><span class="badge badge-info">${p.type}</span></td>
+          <td>${p.location}</td>
+          <td>₹${p.price.toLocaleString('en-IN')}</td>
+          <td>${p.area}</td>
+          <td>${p.agent}</td>
+          <td><button class="btn btn-danger btn-sm" onclick="deleteProp('${p.id}')">Delete</button></td>
+        </tr>
+      `).join('');
+
+      document.getElementById('admPropCount').innerText = properties.length;
+      document.getElementById('admVisitsCount').innerText = visits.length;
+    }
+
+    function deleteProp(id) {
+      properties = properties.filter(x => x.id !== id);
+      saveData();
+      showToast('Property deleted from database', 'warning');
+    }
+
+    function renderAdminVisits() {
+      const tbody = document.getElementById('adminVisitsAuditBody');
+      tbody.innerHTML = visits.map(v => `
+        <tr>
+          <td><code>${v.id}</code></td>
+          <td><strong>${v.buyer}</strong><br><small>${v.phone}</small></td>
+          <td>${v.propTitle} (${v.location})</td>
+          <td>${v.date} @ ${v.time}</td>
+          <td>${v.agent}</td>
+          <td><span class="badge badge-success">Assigned</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function handleCreateProperty(e) {
+      e.preventDefault();
+      const title = document.getElementById('newPropTitle').value.trim();
+      const type = document.getElementById('newPropType').value;
+      const location = document.getElementById('newPropLoc').value.trim();
+      const price = parseInt(document.getElementById('newPropPrice').value) || 5000000;
+      const area = parseInt(document.getElementById('newPropArea').value) || 1200;
+      const agent = document.getElementById('newPropAgent').value.trim();
+
+      properties.push({
+        id: 'PROP' + (properties.length + 1),
+        title, type, location, price, priceStr: '₹' + price.toLocaleString('en-IN'),
+        area, agent, emoji: '🏠', amenities: 'Security, Reserved Parking, Lift'
+      });
+
+      saveData();
+      closeModal('addPropModal');
+      e.target.reset();
+      showToast(`Property "${title}" listed!`, 'success');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initRoleSwitcher();
+      const saved = localStorage.getItem('ip_lab_exp11_saved_criteria');
+      if (saved) {
+        const c = JSON.parse(saved);
+        if (c.loc) document.getElementById('propLoc').value = c.loc;
+        if (c.type) document.getElementById('propType').value = c.type;
+        if (c.budget) document.getElementById('propBudget').value = c.budget;
+      }
+      const today = new Date('2026-03-29');
+      document.getElementById('visitDate').value = today.toISOString().split('T')[0];
+      renderAll();
+    });
+  </script>
+</body>
+</html>

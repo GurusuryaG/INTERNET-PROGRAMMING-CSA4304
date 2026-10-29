@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exp 8: MedCare Hospital Appointment System</title>
+  <link rel="stylesheet" href="../../shared/css/app.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="nav-container">
+      <a href="../../index.html" class="brand">
+        🏥 <span>MedCare Multi-Speciality</span>
+        <span class="brand-badge">Exp 8</span>
+      </a>
+      <div class="role-switcher">
+        <button class="role-btn active" data-role="patient">Patient / User</button>
+        <button class="role-btn" data-role="admin">Hospital Admin</button>
+        <button class="role-btn" data-role="branch">Hospital Branch</button>
+      </div>
+      <a href="../../index.html" class="back-hub-btn">← All Experiments</a>
+    </div>
+  </header>
+
+  <main class="app-container">
+    <!-- PATIENT VIEW -->
+    <div data-role-view="patient">
+      <!-- Search Doctor by Specialty & Location -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🩺 Find Doctors by Specialty & Branch</div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Specialty</label>
+            <select id="userSpecialty" class="form-select" onchange="renderDoctorsList()">
+              <option value="all">All Specialties</option>
+              <option value="Cardiology">Cardiology (Heart)</option>
+              <option value="Neurology">Neurology (Brain/Nerves)</option>
+              <option value="Orthopedics">Orthopedics (Bones & Joints)</option>
+              <option value="Pediatrics">Pediatrics (Child Care)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Location / City</label>
+            <select id="userLocation" class="form-select" onchange="renderDoctorsList()">
+              <option value="all">All Branches</option>
+              <option value="Chennai Main">Chennai Main Campus</option>
+              <option value="Anna Nagar">Anna Nagar Clinic</option>
+              <option value="Velachery">Velachery Center</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Preferred Date</label>
+            <input type="date" id="userAppDate" class="form-control">
+          </div>
+        </div>
+      </div>
+
+      <!-- Doctors Roster List -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">👨‍⚕️ Available Specialist Doctors</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Doctor</th>
+                <th>Specialty</th>
+                <th>Branch Location</th>
+                <th>Experience</th>
+                <th>OPD Timings</th>
+                <th>Rating</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="patientDoctorsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Digital Pre-Appointment Check-in Form -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📝 Fast-Track Digital Check-In Form</div>
+        </div>
+        <form onsubmit="handleDigitalCheckIn(event)" class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Patient Name</label>
+            <input type="text" id="chkPatientName" class="form-control" value="Ramesh Narayanan" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Age & Blood Group</label>
+            <input type="text" id="chkBlood" class="form-control" value="45y, B+ve" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Current Symptoms / Reason for Visit</label>
+            <input type="text" id="chkSymptoms" class="form-control" placeholder="Chest tightness, elevated BP reading..." required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Known Allergies / Pre-existing Conditions</label>
+            <input type="text" id="chkAllergies" class="form-control" value="Diabetic (Type 2), No drug allergies">
+          </div>
+          <div class="form-group" style="align-self: flex-end;">
+            <button type="submit" class="btn btn-success" style="width: 100%;">Submit Check-In Data</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Patient Past Appointments & Check-in History -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📜 My Appointments & Past Medical Check-Ins</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Appt ID</th>
+                <th>Doctor Name</th>
+                <th>Specialty</th>
+                <th>Date & Slot</th>
+                <th>Check-in Form</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="patientApptBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN VIEW -->
+    <div data-role-view="admin" style="display: none;">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Active Doctors</span>
+          <span class="stat-value" id="admDoctorCount">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Total Appointments</span>
+          <span class="stat-value" id="admApptCount">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Hospital Satisfaction</span>
+          <span class="stat-value">4.8 / 5.0</span>
+        </div>
+      </div>
+
+      <!-- Manage Doctors -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">👨‍⚕️ Manage Medical Staff & Roster</div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('addDoctorModal')">+ Register New Doctor</button>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Doctor</th>
+                <th>Specialty</th>
+                <th>Location</th>
+                <th>Consultation Fee (₹)</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminDoctorsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Manage Patient Appointments -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📅 Master Appointment Queue</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Patient</th>
+                <th>Doctor</th>
+                <th>Schedule</th>
+                <th>Status</th>
+                <th>Admin Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminAppointmentsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- HOSPITAL BRANCH VIEW -->
+    <div data-role-view="branch" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🏥 Hospital Branch & Google Map Coordinates</div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Branch Name</label>
+            <input type="text" id="brName" class="form-control" value="MedCare Super Specialty Hospital - Chennai Central">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Emergency Phone</label>
+            <input type="text" id="brPhone" class="form-control" value="044 - 2434 8899 / 108">
+          </div>
+          <div class="form-group">
+            <label class="form-label">GPS Latitude & Longitude</label>
+            <input type="text" id="brGps" class="form-control" value="13.0827° N, 80.2707° E">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Full Street Address</label>
+            <input type="text" id="brAddress" class="form-control" value="No. 12, Poonamallee High Road, Kilpauk, Chennai - 600010">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="saveBranchDetails()">Update Branch Details</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Book Appointment Modal -->
+  <div id="bookDocModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="card-title" id="bookModalDocTitle">Book Consultation</h3>
+        <button class="modal-close" onclick="closeModal('bookDocModal')">&times;</button>
+      </div>
+      <form onsubmit="handleConfirmDocBooking(event)">
+        <div class="modal-body">
+          <input type="hidden" id="modalDocId">
+          <div class="form-group">
+            <label class="form-label">Patient Full Name</label>
+            <input type="text" id="modalPatientName" class="form-control" value="Ramesh Narayanan" required>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Appointment Date</label>
+              <input type="date" id="modalDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Time Slot</label>
+              <select id="modalTimeSlot" class="form-select">
+                <option value="09:30 AM - 10:00 AM">09:30 AM - 10:00 AM</option>
+                <option value="11:00 AM - 11:30 AM">11:00 AM - 11:30 AM</option>
+                <option value="04:00 PM - 04:30 PM">04:00 PM - 04:30 PM</option>
+                <option value="06:00 PM - 06:30 PM">06:00 PM - 06:30 PM</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Visit Type</label>
+            <select id="modalVisitType" class="form-select">
+              <option value="First Consultation">First Consultation</option>
+              <option value="Follow-up Review">Follow-up Review</option>
+              <option value="Second Opinion">Second Opinion</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('bookDocModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Confirm Appointment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Doctor Modal -->
+  <div id="addDoctorModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="card-title">Register Specialist Doctor</h3>
+        <button class="modal-close" onclick="closeModal('addDoctorModal')">&times;</button>
+      </div>
+      <form onsubmit="handleCreateDoctor(event)">
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Doctor Name</label>
+              <input type="text" id="newDocName" class="form-control" placeholder="Dr. S. K. Sundar" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Specialty</label>
+              <select id="newDocSpec" class="form-select">
+                <option value="Cardiology">Cardiology</option>
+                <option value="Neurology">Neurology</option>
+                <option value="Orthopedics">Orthopedics</option>
+                <option value="Pediatrics">Pediatrics</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Branch</label>
+              <select id="newDocBranch" class="form-select">
+                <option value="Chennai Main">Chennai Main</option>
+                <option value="Anna Nagar">Anna Nagar</option>
+                <option value="Velachery">Velachery</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Consultation Fee (₹)</label>
+              <input type="number" id="newDocFee" class="form-control" value="600" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('addDoctorModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Doctor</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../../shared/js/utils.js"></script>
+  <script>
+    const DEFAULT_DOCS = [
+      { id: 'DOC1', name: 'Dr. Arunkumar MD, DM', specialty: 'Cardiology', branch: 'Chennai Main', exp: '16 Years', timing: '09:00 AM - 01:00 PM', fee: 700, rating: '4.9 ⭐ (142 reviews)' },
+      { id: 'DOC2', name: 'Dr. Shalini Krishnan MS', specialty: 'Neurology', branch: 'Anna Nagar', exp: '12 Years', timing: '10:00 AM - 02:00 PM', fee: 800, rating: '4.8 ⭐ (98 reviews)' },
+      { id: 'DOC3', name: 'Dr. Rajesh Vaidya MCh', specialty: 'Orthopedics', branch: 'Velachery', exp: '14 Years', timing: '04:00 PM - 08:00 PM', fee: 600, rating: '4.9 ⭐ (115 reviews)' }
+    ];
+
+    const DEFAULT_HOSP_APPTS = [
+      { id: 'MED-701', patient: 'Ramesh Narayanan', docId: 'DOC1', docName: 'Dr. Arunkumar', specialty: 'Cardiology', date: '2026-03-26', slot: '09:30 AM - 10:00 AM', checkinSubmitted: true, status: 'Confirmed' }
+    ];
+
+    let doctors = getStore('ip_lab_exp8_docs', DEFAULT_DOCS);
+    let appts = getStore('ip_lab_exp8_appts', DEFAULT_HOSP_APPTS);
+
+    function saveData() {
+      setStore('ip_lab_exp8_docs', doctors);
+      setStore('ip_lab_exp8_appts', appts);
+      renderAll();
+    }
+
+    function renderAll() {
+      renderDoctorsList();
+      renderPatientAppts();
+      renderAdminDocs();
+      renderAdminAppts();
+    }
+
+    function renderDoctorsList() {
+      const spec = document.getElementById('userSpecialty').value;
+      const loc = document.getElementById('userLocation').value;
+      const tbody = document.getElementById('patientDoctorsBody');
+
+      const filtered = doctors.filter(d => {
+        const mSpec = spec === 'all' || d.specialty === spec;
+        const mLoc = loc === 'all' || d.branch === loc;
+        return mSpec && mLoc;
+      });
+
+      tbody.innerHTML = filtered.map(d => `
+        <tr>
+          <td><strong>${d.name}</strong></td>
+          <td><span class="badge badge-info">${d.specialty}</span></td>
+          <td>${d.branch}</td>
+          <td>${d.exp}</td>
+          <td>${d.timing}</td>
+          <td><small style="color: var(--warning);">${d.rating}</small></td>
+          <td>
+            <button class="btn btn-primary btn-sm" onclick="openDocBooking('${d.id}')">Book Appointment</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openDocBooking(docId) {
+      const d = doctors.find(x => x.id === docId);
+      if (!d) return;
+      document.getElementById('modalDocId').value = d.id;
+      document.getElementById('bookModalDocTitle').innerText = `Consultation with ${d.name}`;
+      openModal('bookDocModal');
+    }
+
+    function handleConfirmDocBooking(e) {
+      e.preventDefault();
+      const docId = document.getElementById('modalDocId').value;
+      const d = doctors.find(x => x.id === docId);
+      if (!d) return;
+
+      const newId = 'MED-' + Math.floor(100 + Math.random() * 900);
+      const patient = document.getElementById('modalPatientName').value.trim();
+      const date = document.getElementById('modalDate').value || '2026-03-26';
+      const slot = document.getElementById('modalTimeSlot').value;
+
+      appts.unshift({
+        id: newId,
+        patient,
+        docId: d.id,
+        docName: d.name,
+        specialty: d.specialty,
+        date,
+        slot,
+        checkinSubmitted: false,
+        status: 'Confirmed'
+      });
+
+      saveData();
+      closeModal('bookDocModal');
+      showToast(`Appointment ${newId} confirmed with ${d.name}! SMS reminder triggered.`, 'success');
+    }
+
+    function handleDigitalCheckIn(e) {
+      e.preventDefault();
+      showToast('Digital pre-checkin submitted! Token #22 generated for instant OPD entry.', 'success');
+    }
+
+    function renderPatientAppts() {
+      const tbody = document.getElementById('patientApptBody');
+      tbody.innerHTML = appts.map(a => `
+        <tr>
+          <td><code>${a.id}</code></td>
+          <td><strong>${a.docName}</strong></td>
+          <td><span class="badge badge-info">${a.specialty}</span></td>
+          <td>${formatDate(a.date)}<br><small>${a.slot}</small></td>
+          <td><span class="badge ${a.checkinSubmitted ? 'badge-success' : 'badge-warning'}">${a.checkinSubmitted ? 'Form Done' : 'Pending Check-in'}</span></td>
+          <td><span class="badge ${a.status === 'Confirmed' ? 'badge-success' : 'badge-danger'}">${a.status}</span></td>
+          <td>
+            ${a.status === 'Confirmed' ? `<button class="btn btn-danger btn-sm" onclick="cancelHospAppt('${a.id}')">Cancel</button>` : `<span class="badge badge-info">Closed</span>`}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function cancelHospAppt(id) {
+      const a = appts.find(x => x.id === id);
+      if (a && confirm(`Cancel appointment ${id}?`)) {
+        a.status = 'Cancelled';
+        saveData();
+        showToast(`Appointment ${id} cancelled.`, 'info');
+      }
+    }
+
+    function renderAdminDocs() {
+      const tbody = document.getElementById('adminDoctorsTableBody');
+      tbody.innerHTML = doctors.map(d => `
+        <tr>
+          <td><strong>${d.name}</strong></td>
+          <td>${d.specialty}</td>
+          <td>${d.branch}</td>
+          <td>₹${d.fee}</td>
+          <td><button class="btn btn-danger btn-sm" onclick="deleteDoc('${d.id}')">Remove</button></td>
+        </tr>
+      `).join('');
+
+      document.getElementById('admDoctorCount').innerText = doctors.length;
+      document.getElementById('admApptCount').innerText = appts.length;
+    }
+
+    function deleteDoc(id) {
+      doctors = doctors.filter(d => d.id !== id);
+      saveData();
+      showToast('Doctor removed from active roster', 'warning');
+    }
+
+    function renderAdminAppts() {
+      const tbody = document.getElementById('adminAppointmentsBody');
+      tbody.innerHTML = appts.map(a => `
+        <tr>
+          <td><code>${a.id}</code></td>
+          <td><strong>${a.patient}</strong></td>
+          <td>${a.docName} (${a.specialty})</td>
+          <td>${a.date} @ ${a.slot}</td>
+          <td><span class="badge ${a.status === 'Confirmed' ? 'badge-success' : 'badge-danger'}">${a.status}</span></td>
+          <td>
+            ${a.status === 'Confirmed' ? `<button class="btn btn-danger btn-sm" onclick="cancelHospAppt('${a.id}')">Cancel Slot</button>` : '-'}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function handleCreateDoctor(e) {
+      e.preventDefault();
+      const name = document.getElementById('newDocName').value.trim();
+      const specialty = document.getElementById('newDocSpec').value;
+      const branch = document.getElementById('newDocBranch').value;
+      const fee = parseInt(document.getElementById('newDocFee').value) || 500;
+
+      doctors.push({
+        id: 'DOC' + (doctors.length + 1),
+        name, specialty, branch, exp: '10 Years',
+        timing: '09:00 AM - 01:00 PM', fee,
+        rating: '5.0 ⭐ (New)'
+      });
+      saveData();
+      closeModal('addDoctorModal');
+      e.target.reset();
+      showToast(`Registered ${name}!`, 'success');
+    }
+
+    function saveBranchDetails() {
+      showToast('Hospital branch location and contact coordinates saved!', 'success');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initRoleSwitcher();
+      const today = new Date('2026-03-26');
+      document.getElementById('userAppDate').value = today.toISOString().split('T')[0];
+      document.getElementById('modalDate').value = today.toISOString().split('T')[0];
+      renderAll();
+    });
+  </script>
+</body>
+</html>
